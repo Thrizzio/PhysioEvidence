@@ -1,6 +1,6 @@
 import os
 import uuid
-import fitz  # PyMuPDF
+import pymupdf as fitz
 from document_processing.loaders.base import DocumentLoader
 from document_processing.models.document import ExtractedDocument, Page, DocumentMetadata
 

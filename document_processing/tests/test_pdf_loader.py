@@ -1,7 +1,7 @@
 import os
 import pytest
 from document_processing.loaders.pdf_loader import PDFLoader
-import fitz
+import pymupdf as fitz
 
 @pytest.fixture
 def sample_pdf_path(tmp_path):
