@@ -1,7 +1,7 @@
 # PhysioEvidence
 
 ## What this is
-PhysioEvidence is a RAG-based research assistant designed to help physiotherapists explore scientific literature and retrieve evidence grounded in clinical papers.
+PhysioEvidence is an evidence-grounded research assistant designed to help physiotherapists explore scientific literature, retrieve evidence, and generate answers strictly grounded in clinical research papers with verifiable source citations.
 
 ## Stack
 - Python 3.14
@@ -10,26 +10,36 @@ PhysioEvidence is a RAG-based research assistant designed to help physiotherapis
 - Embeddings: Google Gemini (`text-embedding-004`, 768 dimensions)
 - Storage & Vector DB: PostgreSQL 16+ with `pgvector`
 - Database driver: `psycopg` (v3) binary
+- Generation: Google Gemini (`gemini-1.5-flash`)
 - Testing: `pytest`
 - Observability: LangSmith (optional tracing via environment variables)
 
 ## Commands
 - Install dependencies: `.venv\Scripts\pip install -r requirements.txt`
-- Run tests: `.venv\Scripts\pytest`
-- Run document processing CLI: `.venv\Scripts\python -m document_processing.cli --input <pdf_path> --output <output_json>`
+- Run test suite: `.venv\Scripts\pytest`
+- Run document processing CLI (single file):
+  `.venv\Scripts\python -m document_processing.cli --input <pdf_path> [--output <json_path>] [--no-embeddings] [--save-db]`
+- Ingest a folder of PDFs:
+  `.venv\Scripts\python -m document_processing.cli --input-dir <dir_path> [--recursive] [--save-db]`
+- Initialize PostgreSQL schema:
+  `.venv\Scripts\python -m document_processing.cli --init-db`
+- Ask a clinical question (RAG):
+  `.venv\Scripts\python -m rag.cli --question "What quadriceps symmetry index is needed after ACL reconstruction?" [--hybrid] [--rerank]`
+- Run retrieval benchmark:
+  `.venv\Scripts\python -m evaluation.run_benchmark`
 
 ## Conventions
 - `document_processing/`: Ingestion, extraction, cleaning, section detection, chunking, and embedding.
-  - `models/`: Pydantic domain models for documents, pages, sections, and chunks.
-  - `loaders/`: Document loaders with abstract base classes (`DocumentLoader`).
-  - `processors/`: Deterministic text cleaners, section detectors, and hierarchical chunkers.
-  - `embeddings/`: Embedding provider abstraction and concrete implementations.
-  - `pipeline/`: Orchestrating pipelines from raw file to embedded chunks.
-  - `tests/`: Component and unit tests.
-- `storage/`: Database connection, schema migrations, and vector storage repositories.
+- `storage/`: Database connection, schema migrations (`schema.sql`), and vector store implementations (`PostgresVectorStore`, `InMemoryVectorStore`).
+- `retrieval/`: Semantic vector retrieval (`VectorRetriever`), hybrid search with Reciprocal Rank Fusion (`HybridRetriever`), and reranking (`CrossEncoderReranker`).
+- `generation/`: Grounded prompt engineering, context assembly, source citation mapping, and LLM synthesis (`EvidenceSynthesizer`).
+- `rag/`: End-to-end RAG orchestrator (`PhysioEvidenceRAG`) and question CLI (`rag.cli`).
+- `evaluation/`: Curated benchmark questions, evaluation corpus, metrics (`recall_at_k`, `mrr`, `ndcg_at_k`), and benchmark runner.
+- `observability/`: Non-invasive LangSmith tracing wrapper (`trace_operation`).
 - Keep external services (Gemini, LangSmith, PostgreSQL) behind abstractions so unit tests run fast without live credentials.
 
 ## Treat as high-stakes (explain before implementing)
-- Database schema changes and pgvector index configurations (vector dimensions, index types like HNSW/IVFFlat, indexing distance metrics).
-- Embedding dimensionality consistency across chunk generation and queries.
+- Medical groundedness: Never allow the LLM to hallucinate or fabricate clinical advice; enforce refusal on insufficient evidence.
+- Database schema changes and pgvector index configurations (vector dimensions, distance metrics, HNSW parameters).
+- Embedding dimensionality consistency across chunk generation and queries (768 dimensions).
 - Safe handling of credentials and API keys: NEVER commit `.env` or secret keys.

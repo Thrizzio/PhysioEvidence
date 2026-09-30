@@ -63,3 +63,18 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
                 
         return chunks
 
+    def embed_query(self, query: str) -> List[float]:
+        """
+        Generates an embedding vector for a single query using task_type='retrieval_query'.
+        """
+        try:
+            result = genai.embed_content(
+                model=self.model_name,
+                content=query,
+                task_type="retrieval_query"
+            )
+            return result['embedding']
+        except Exception as e:
+            logger.error(f"Failed to generate query embedding: {str(e)}")
+            raise RuntimeError(f"Query embedding API failure: {str(e)}") from e
+

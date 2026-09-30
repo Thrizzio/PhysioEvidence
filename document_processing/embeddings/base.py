@@ -15,3 +15,10 @@ class EmbeddingProvider(ABC):
         """
         pass
 
+    @abstractmethod
+    def embed_query(self, query: str) -> List[float]:
+        """
+        Generates an embedding vector for a search query.
+        """
+        pass
+

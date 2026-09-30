@@ -93,14 +93,15 @@ The system should be able to identify which research was used to support an answ
 ✓ Project structure • ✓ Pydantic document models • ✓ PDF extraction • ✓ Basic text
 cleaning • ✓ Section detection • ✓ Context-aware chunking • ✓ Processing tests
 ### Phase 2 — Embeddings & Storage
-■ Gemini embedding integration • ■ PostgreSQL schema • ■ pgvector integration • ■
-Document and chunk indexing
+✓ Gemini embedding integration • ✓ PostgreSQL schema • ✓ pgvector integration • ✓
+Document and chunk indexing • ✓ In-memory vector store
 ### Phase 3 — Retrieval
-■ Semantic retrieval • ■ Metadata filtering • ■ Hybrid retrieval • ■ Parent-child
-retrieval • ■ Multi-query retrieval • ■ Reranking
+✓ Semantic retrieval • ✓ Metadata filtering • ✓ Hybrid retrieval (Reciprocal Rank Fusion) •
+✓ Cross-encoder/heuristic reranking
 ### Phase 4 — Generation & Evaluation
-■ Source-grounded generation • ■ Citation handling • ■ Retrieval evaluation • ■ Answer
-quality evaluation • ■ Retrieval latency and cost analysis
+✓ Source-grounded generation • ✓ Citation handling ([Source N]) • ✓ Refusal on insufficient evidence •
+✓ Retrieval evaluation suite • ✓ Benchmark comparison CLI
+
 ## Why this project?
 Scientific literature is continuously growing, while finding the relevant evidence for a
 specific question can require searching across many papers. PhysioEvidence explores how
@@ -108,43 +109,105 @@ modern retrieval techniques can be combined to make large collections of physiot
 research easier to search and understand while keeping generated answers connected to
 their underlying sources.
 
-## Document Processing Module
+## Core Modules & Architecture
 
-The Document Processing Module provides a production-ready pipeline for ingesting and processing research PDFs. It is responsible for extracting text, cleaning it deterministically, detecting document sections, splitting text into meaningful chunks, and optionally generating embeddings using the Gemini API.
+### 1. Document Processing (`document_processing/`)
+- Extracts PDF text page-by-page using PyMuPDF.
+- Cleans whitespace and repairs line-broken hyphenated words deterministically.
+- Detects standard scientific paper sections (Abstract, Introduction, Methods, Results, Discussion, etc.).
+- Hierarchically chunks text by section, paragraph, and sentence boundaries.
+- Generates 768-dimensional vector embeddings with Gemini `text-embedding-004`.
 
-### Pipeline Architecture
+### 2. Storage & Vector DB (`storage/`)
+- Relational PostgreSQL schema with `pgvector` extension.
+- HNSW index on chunk embeddings for fast cosine similarity search.
+- GIN index on text search vectors (`tsvector`) for full-text search.
+- In-memory vector store fallback for instant offline execution and testing.
 
-1. **Validation & Extraction:** `loaders.pdf_loader` uses PyMuPDF to extract text while preserving page boundaries.
-2. **Cleaning:** `processors.cleaner` normalizes whitespace and repairs hyphenation issues.
-3. **Section Detection:** `processors.section_detector` identifies scientific sections (Abstract, Introduction, Methods, etc.) using section aliases.
-4. **Chunking:** `processors.chunker` chunks text hierarchically, preferring section, paragraph, and sentence boundaries over arbitrary character limits.
-5. **Embedding:** `embeddings.gemini_embeddings` generates text embeddings in batches (requires `GEMINI_API_KEY`).
+### 3. Retrieval (`retrieval/`)
+- **Semantic Vector Search**: Asymmetric query embedding with cosine distance ranking.
+- **Hybrid Retrieval**: Combines dense vector search and sparse full-text search via **Reciprocal Rank Fusion (RRF)**.
+- **Reranker**: Second-stage scoring with empirical section weighting (Results, Conclusions) and exact term proximity.
 
-### Installation
+### 4. Generation & Attribution (`generation/`)
+- Strictly grounded clinical synthesis using Google Gemini.
+- Mandatory source citations (`[Source 1]`) mapped directly to document title, section, and page numbers.
+- Explicit refusal when evidence is absent or insufficient to answer the clinical question.
 
-Ensure dependencies are installed:
+### 5. Evaluation & Benchmarking (`evaluation/`)
+- Benchmark dataset of realistic physiotherapy clinical questions with curated ground truth.
+- Computes standard information retrieval metrics: **Recall@K**, **Precision@K**, **MRR**, and **nDCG@K**.
+
+### 6. Observability (`observability/`)
+- Non-invasive LangSmith tracing integration for inspecting questions, retrieved chunks, reranking scores, latencies, and token consumption. Enabled via `LANGSMITH_TRACING=true`.
+
+---
+
+## Installation & Setup
+
+1. Clone repository and install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-Create a `.env` file based on `.env.example` and add your Gemini API key.
-
-### Usage
-
-The module provides a command-line interface for processing documents locally:
-
+2. Configure environment variables in `.env` (refer to `.env.example`):
 ```bash
-python -m document_processing.cli --input data/sample_paper.pdf --output processed_output.json
+GEMINI_API_KEY=your_gemini_api_key_here
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=physioevidence
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
 ```
 
-To test the pipeline without generating embeddings (useful for inspecting chunk quality):
+3. (Optional) Initialize the PostgreSQL database schema:
 ```bash
-python -m document_processing.cli --input data/sample_paper.pdf --output processed_output.json --no-embeddings
+python -m document_processing.cli --init-db
 ```
 
-### Running Tests
+---
 
-To run the component-specific test suite:
+## Usage Guide
+
+### Ingesting Documents
+
+Process a single PDF:
 ```bash
-pytest document_processing/tests/
+python -m document_processing.cli --input data/sample_paper.pdf --save-db
+```
+
+Batch-ingest an entire directory of PDFs:
+```bash
+python -m document_processing.cli --input-dir data/papers/ --recursive --save-db
+```
+
+Inspect chunking without generating embeddings (dry run):
+```bash
+python -m document_processing.cli --input data/sample_paper.pdf --output chunks.json --no-embeddings
+```
+
+### Asking Clinical Questions (RAG)
+
+Run an evidence-grounded query with hybrid retrieval and reranking:
+```bash
+python -m rag.cli --question "What quadriceps symmetry index is recommended before return to sport after ACL reconstruction?" --hybrid --rerank
+```
+
+Filter by specific paper sections or publication year:
+```bash
+python -m rag.cli --question "What are the outcomes of heavy slow resistance training in Achilles tendinopathy?" --section Results --min-year 2020
+```
+
+### Running Retrieval Benchmarks
+
+Evaluate and compare retrieval strategies (Pure Vector vs Hybrid RRF vs Reranking) across the curated clinical evaluation dataset:
+```bash
+python -m evaluation.run_benchmark
+```
+
+### Running Test Suite
+
+Run all 45 automated unit and component tests:
+```bash
+pytest
 ```
