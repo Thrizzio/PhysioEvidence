@@ -91,7 +91,7 @@ The system should be able to identify which research was used to support an answ
 ## Development Roadmap
 ### Phase 1 — Document Processing
 ✓ Project structure • ✓ Pydantic document models • ✓ PDF extraction • ✓ Basic text
-cleaning • ■ Section detection • ■ Context-aware chunking • ■ Processing tests
+cleaning • ✓ Section detection • ✓ Context-aware chunking • ✓ Processing tests
 ### Phase 2 — Embeddings & Storage
 ■ Gemini embedding integration • ■ PostgreSQL schema • ■ pgvector integration • ■
 Document and chunk indexing
@@ -107,3 +107,44 @@ specific question can require searching across many papers. PhysioEvidence explo
 modern retrieval techniques can be combined to make large collections of physiotherapy
 research easier to search and understand while keeping generated answers connected to
 their underlying sources.
+
+## Document Processing Module
+
+The Document Processing Module provides a production-ready pipeline for ingesting and processing research PDFs. It is responsible for extracting text, cleaning it deterministically, detecting document sections, splitting text into meaningful chunks, and optionally generating embeddings using the Gemini API.
+
+### Pipeline Architecture
+
+1. **Validation & Extraction:** `loaders.pdf_loader` uses PyMuPDF to extract text while preserving page boundaries.
+2. **Cleaning:** `processors.cleaner` normalizes whitespace and repairs hyphenation issues.
+3. **Section Detection:** `processors.section_detector` identifies scientific sections (Abstract, Introduction, Methods, etc.) using section aliases.
+4. **Chunking:** `processors.chunker` chunks text hierarchically, preferring section, paragraph, and sentence boundaries over arbitrary character limits.
+5. **Embedding:** `embeddings.gemini_embeddings` generates text embeddings in batches (requires `GEMINI_API_KEY`).
+
+### Installation
+
+Ensure dependencies are installed:
+```bash
+pip install -r requirements.txt
+```
+
+Create a `.env` file based on `.env.example` and add your Gemini API key.
+
+### Usage
+
+The module provides a command-line interface for processing documents locally:
+
+```bash
+python -m document_processing.cli --input data/sample_paper.pdf --output processed_output.json
+```
+
+To test the pipeline without generating embeddings (useful for inspecting chunk quality):
+```bash
+python -m document_processing.cli --input data/sample_paper.pdf --output processed_output.json --no-embeddings
+```
+
+### Running Tests
+
+To run the component-specific test suite:
+```bash
+pytest document_processing/tests/
+```
