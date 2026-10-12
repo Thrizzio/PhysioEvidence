@@ -1,0 +1,11 @@
+# ADR-001: Source-agnostic ingestion and optional OpenAlex
+- Status: Proposed
+- Date: 2026-10-12
+- Context: The initial corpus consists of user-supplied PDFs, while discovery metadata may later come from OpenAlex.
+- Decision: Keep extraction and processing independent of discovery providers. OpenAlex is optional metadata/discovery input, never a required ingestion dependency.
+- Alternatives considered: OpenAlex-first ingestion; provider-specific PDF downloaders; a single crawler. These couple processing to access terms and make local use harder.
+- Consequences and trade-offs: The system accepts fewer automatic metadata fields initially but preserves source portability and licensing boundaries.
+- Security, privacy, and licensing: Never download or redistribute a paper solely because it is discoverable; retain license/access metadata when known.
+- Performance/scaling implications: Provider calls do not sit on the synchronous PDF processing path.
+- Validation/evidence: Existing `PDFLoader` has no discovery-provider dependency. OpenAlex integration has not been enabled or externally validated.
+- Revisit when: Approved OpenAlex fields, terms, and rate limits are supplied.

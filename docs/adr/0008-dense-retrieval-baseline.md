@@ -1,0 +1,11 @@
+# ADR-008: Dense retrieval baseline and vector index choice
+- Status: Accepted
+- Date: 2026-10-12
+- Context: A measurable baseline is required before multi-query, expansion, or reranking.
+- Decision: Use configurable top-k cosine dense retrieval through `VectorStore`, with exact in-memory search for tests and pgvector HNSW for PostgreSQL.
+- Alternatives considered: Approximate-only tests; a separate vector database; score blending at baseline. These weaken reproducibility or add unneeded infrastructure.
+- Consequences and trade-offs: Exact local tests are slower at very large scale but easy to reason about; HNSW requires tuning.
+- Security, privacy, and licensing: Query and source data stay behind the configured store boundary.
+- Performance/scaling implications: Candidate counts and HNSW settings are configuration, not universal claims.
+- Validation/evidence: Dense retrieval has unit tests and a benchmark runner using a synthetic evaluation corpus; it is not a real-paper quality claim.
+- Revisit when: Real-corpus latency or recall requires a different index.

@@ -1,0 +1,11 @@
+# ADR-012: Reranker choice and activation criteria
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Reranking can improve precision but adds model latency and another compatibility surface.
+- Decision: Keep reranking optional and selectable after baseline retrieval; existing heuristic reranking is a transparent baseline, not a validated cross-encoder claim.
+- Alternatives considered: Always-on cross-encoder; no reranking; heuristic only. Always-on costs latency, no reranker may reduce precision, and heuristic quality needs comparison.
+- Consequences and trade-offs: The API can compare strategies without forcing local model downloads.
+- Security, privacy, and licensing: Optional local models must be licensed and source text is not sent remotely by default.
+- Performance/scaling implications: Candidate pool and top-n are bounded and latency should be recorded.
+- Validation/evidence: Heuristic tests exist; a suitable local cross-encoder has not been selected or benchmarked.
+- Revisit when: Baseline results justify the added latency.

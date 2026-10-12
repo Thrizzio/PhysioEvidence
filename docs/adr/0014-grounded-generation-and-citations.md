@@ -1,0 +1,11 @@
+# ADR-014: LLM, context assembly, citations, and insufficient-evidence behavior
+- Status: Accepted
+- Date: 2026-10-12
+- Context: Clinical answers must be traceable to retrieved source passages and must disclose missing evidence.
+- Decision: Assemble bounded numbered passages, use an abstract LLM provider, map displayed sources to actual search results, and return an explicit insufficient-evidence response when no evidence is retrieved.
+- Alternatives considered: Free-form generation; generated bibliography; answer-only output. These make verification unreliable.
+- Consequences and trade-offs: Answers may refuse more often and context is bounded, but source/page/section mappings remain inspectable.
+- Security, privacy, and licensing: PDF text is untrusted context, not instructions; prompts must not log credentials or fabricate source data.
+- Performance/scaling implications: Context size and top-k are bounded; model latency/token usage is recorded when available.
+- Validation/evidence: Offline end-to-end tests verify source mapping and empty-result refusal. Human clinical validation is not claimed.
+- Revisit when: Citation correctness evaluation identifies a safer structured-output approach.

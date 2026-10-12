@@ -1,0 +1,11 @@
+# ADR-013: Bibliographic metadata and filters
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Title, authors, year, journal, DOI, source, license, and section improve evidence inspection and filtering.
+- Decision: Preserve extracted metadata separately from persistence schema; represent missing fields as unknown, never as guessed values, and apply filters only when metadata matches.
+- Alternatives considered: Infer metadata from filenames; reject incomplete papers; merge discovery metadata silently. These risk fabricated or misleading citations.
+- Consequences and trade-offs: Some papers have sparse display metadata, but citation integrity is preserved.
+- Security, privacy, and licensing: Source URLs and license/access data are informational and do not grant redistribution rights.
+- Performance/scaling implications: Indexed year/section fields support the initial filters; richer metadata search is deferred.
+- Validation/evidence: Pydantic models, store filters, and citation metadata exist; provider metadata mapping is not complete.
+- Revisit when: An approved metadata source and corpus schema are available.

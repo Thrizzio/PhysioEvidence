@@ -1,0 +1,11 @@
+# ADR-015: LangSmith tracing, redaction, opt-out, and evaluation
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Retrieval/generation behavior needs inspectable traces, but local tests and sensitive papers must work without tracing.
+- Decision: Keep tracing disabled by default, configure it only with environment variables, trace operation boundaries and metrics where available, and redact secrets/avoid unnecessary content.
+- Alternatives considered: Always-on tracing; custom hosted telemetry; no tracing. Always-on risks privacy, custom telemetry adds scope, and no tracing harms debugging.
+- Consequences and trade-offs: Some traces are provider-dependent and optional; local operation remains independent.
+- Security, privacy, and licensing: API keys never enter source/logs; users control whether source content leaves the process.
+- Performance/scaling implications: Disabled tracing is a no-op-style wrapper; enabled overhead and retention require provider validation.
+- Validation/evidence: Disabled tracing has offline tests; LangSmith SDK/provider behavior has not been tested with credentials.
+- Revisit when: Project URL, redaction policy, and deployment retention requirements are supplied.

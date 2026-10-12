@@ -1,0 +1,11 @@
+# ADR-018: Upload authentication and authorization
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Upload and deletion endpoints change stored data and must not be public without identity and authorization.
+- Decision: Treat the initial service as local-only and require an explicit authentication/authorization adapter before public exposure; enforce file and rate limits at the boundary.
+- Alternatives considered: Anonymous public uploads; API-key-only hardcoding; relying on network location. These are insufficient for a public service.
+- Consequences and trade-offs: Local setup stays simple, but deployment is deliberately blocked until auth is configured.
+- Security, privacy, and licensing: Path traversal, unsafe file serving, and unauthorized deletion are rejected.
+- Performance/scaling implications: Auth checks and upload limits are request-boundary overhead.
+- Validation/evidence: Local endpoint validation can be tested; no identity provider is selected.
+- Revisit when: Hosting and identity requirements are supplied.

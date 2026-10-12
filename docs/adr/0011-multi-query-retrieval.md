@@ -1,0 +1,11 @@
+# ADR-011: Multi-query expansion, limits, fallback, cost, and latency
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Query variants may improve terminology coverage but can drift from clinical intent and increase cost.
+- Decision: Defer activation; when added, cap variants, preserve the original query, make variants trace-visible, time out, and fall back to original retrieval.
+- Alternatives considered: Unbounded LLM rewriting; always-on expansion; manual synonym dictionaries. These either increase risk/cost or have limited coverage.
+- Consequences and trade-offs: The baseline is simpler now; possible recall gains are deferred until measured.
+- Security, privacy, and licensing: Retrieved PDFs are untrusted data and cannot instruct query generation.
+- Performance/scaling implications: Any activation must report added calls and latency.
+- Validation/evidence: No multi-query implementation or gain is claimed.
+- Revisit when: A representative evaluation set and bounded generator are available.

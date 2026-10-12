@@ -1,0 +1,11 @@
+# ADR-010: Hybrid retrieval fusion with RRF
+- Status: Accepted
+- Date: 2026-10-12
+- Context: Dense cosine scores and lexical ranks have incompatible scales.
+- Decision: Retrieve separate dense and lexical candidate lists and fuse by configurable Reciprocal Rank Fusion, preserving the returned chunk identity.
+- Alternatives considered: Raw score addition, min-max normalization, dense-only. Raw addition is uncalibrated; normalization is query-sensitive; dense-only misses exact terms.
+- Consequences and trade-offs: Two retrieval operations are required, but fusion is inspectable and robust to score scales.
+- Security, privacy, and licensing: Both channels use the same store filters and do not expose hidden source data.
+- Performance/scaling implications: Candidate multipliers and RRF k are bounded configuration.
+- Validation/evidence: RRF implementation, unit tests, and offline benchmark comparison exist; real corpus improvement is not claimed.
+- Revisit when: A measured alternative consistently improves recall and latency.

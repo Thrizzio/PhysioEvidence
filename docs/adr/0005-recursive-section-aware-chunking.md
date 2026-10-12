@@ -1,0 +1,11 @@
+# ADR-005: Recursive section-aware chunking; semantic chunking deferred
+- Status: Accepted
+- Date: 2026-10-12
+- Context: Scientific papers have meaningful headings and paragraph boundaries, but semantic chunking adds model cost and unmeasured behavior.
+- Decision: Detect common headings and recursively split by paragraphs, sentences, whitespace, and hard character/token limits while preserving page and section metadata.
+- Alternatives considered: Fixed windows; embedding-based semantic chunking; table-specific parsing. Fixed windows lose structure, semantic splitting is not yet measured, and table parsing needs representative PDFs.
+- Consequences and trade-offs: Deterministic reproducibility is favored over potentially better but unvalidated semantic boundaries.
+- Security, privacy, and licensing: Exact extracted text is retained for traceable evidence; uncertain PDF structure is not invented.
+- Performance/scaling implications: CPU-only and predictable; large documents scale linearly.
+- Validation/evidence: Unit tests cover hierarchy and boundary behavior. Semantic chunking has not been benchmarked.
+- Revisit when: A versioned experiment demonstrates retrieval and citation gains.

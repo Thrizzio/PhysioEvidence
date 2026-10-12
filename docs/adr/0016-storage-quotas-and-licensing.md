@@ -1,0 +1,11 @@
+# ADR-016: Storage quotas, deduplication, retention, and licensing
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Free-tier storage must be used responsibly and scientific PDFs may have redistribution restrictions.
+- Decision: Hash originals for deduplication, track bytes/files/failures, use configurable warning thresholds, expose deletion/export guidance, and retain only user-authorized originals.
+- Alternatives considered: Ignore quotas; copy every upload; store only extracted text. These risk cost, duplication, or loss of re-indexability.
+- Consequences and trade-offs: Usage accounting and deletion paths add bookkeeping but make limits visible.
+- Security, privacy, and licensing: Local/private defaults and explicit source terms are required; discoverability is not a redistribution license.
+- Performance/scaling implications: Hashing and filesystem accounting are linear in upload size.
+- Validation/evidence: Local accounting/dedup behavior is implemented offline; provider quotas/terms await a selected provider.
+- Revisit when: Cloud storage is selected and official limits are verified.

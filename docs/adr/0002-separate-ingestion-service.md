@@ -1,0 +1,11 @@
+# ADR-002: Separate ingestion service boundary and job contract
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Upload, validation, processing, and indexing have different operational risks from question answering.
+- Decision: Place upload/status/list/delete orchestration under `services/ingestion_service`, while importing the canonical `document_processing` and `storage` abstractions instead of copying them.
+- Alternatives considered: Put uploads in the Q&A API; duplicate processing code in a second service; use an external queue immediately. The first mixes trust boundaries, the second diverges behavior, and the third adds deployment complexity before needed.
+- Consequences and trade-offs: A small service boundary and job state model are added; production queue workers remain a future adapter.
+- Security, privacy, and licensing: Uploads are local-only by default and must be authenticated before public exposure; paths are never user-controlled storage paths.
+- Performance/scaling implications: The initial implementation uses bounded in-process jobs; a durable queue can implement the same contract later.
+- Validation/evidence: The contract is covered by offline service tests; deployment concurrency has not been measured.
+- Revisit when: Upload volume or job duration requires a durable worker system.

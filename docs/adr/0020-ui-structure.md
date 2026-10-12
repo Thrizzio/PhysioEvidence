@@ -1,0 +1,11 @@
+# ADR-020: UI structure and source/evidence presentation
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Users need a readable question flow and evidence inspection without confusing generated synthesis with source material.
+- Decision: Separate the Q&A view from ingestion/admin controls; show answer, supporting excerpt, title, metadata, page/section, and explicit no-results/errors with accessible semantic controls.
+- Alternatives considered: Dashboard-first UI; citations without excerpts; mixing upload and Q&A. These reduce readability or obscure trust boundaries.
+- Consequences and trade-offs: A restrained UI has fewer advanced controls initially but makes source verification prominent.
+- Security, privacy, and licensing: Admin/upload controls are not presented as public features; source links respect configured access.
+- Performance/scaling implications: The initial UI uses bounded API responses and does not stream large PDFs.
+- Validation/evidence: UI structure is documented; visual/accessibility validation remains to be run after the UI is added.
+- Revisit when: User research or hosting constraints require a different client architecture.

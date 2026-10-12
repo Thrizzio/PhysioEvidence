@@ -1,0 +1,11 @@
+# ADR-004: PostgreSQL + pgvector and scaling limits
+- Status: Proposed
+- Date: 2026-10-12
+- Context: The application needs metadata filters, lexical search, and vector search with one consistency boundary.
+- Decision: Use PostgreSQL 16+ with pgvector and HNSW cosine indexing for the persistent store; keep the in-memory store for tests and local demos.
+- Alternatives considered: Dedicated vector databases, SQLite extensions, and separate search services. They add synchronization or deployment complexity before corpus scale justifies it.
+- Consequences and trade-offs: One database simplifies correctness but requires pgvector operations and has a single-store scaling ceiling.
+- Security, privacy, and licensing: Credentials stay in environment/secret managers; database access is private and parameterized.
+- Performance/scaling implications: HNSW parameters and vector dimensions require corpus benchmarking; partitioning/read replicas are deferred.
+- Validation/evidence: Schema and store implementations exist; a live PostgreSQL/pgvector run is unavailable in this environment.
+- Revisit when: Corpus size, latency, or provider limits exceed the single PostgreSQL design.

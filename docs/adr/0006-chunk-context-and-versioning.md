@@ -1,0 +1,11 @@
+# ADR-006: Chunk size, overlap, parent context, and chunk versioning
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Retrieval needs precise passages while generation may need neighboring context, and processing settings change over time.
+- Decision: Make size, overlap, strategy, and version explicit metadata; use deterministic chunk IDs and retain parent/neighbor references as optional fields.
+- Alternatives considered: Random UUID-only chunks; one full-section vector; unversioned mutable chunks. Those prevent idempotent re-indexing or controlled comparison.
+- Consequences and trade-offs: More metadata and migrations are required, but index compatibility becomes inspectable.
+- Security, privacy, and licensing: IDs contain hashes rather than source text; source content remains governed by the original document terms.
+- Performance/scaling implications: Re-indexing is required when strategy/version changes; parent expansion must enforce a context budget.
+- Validation/evidence: Deterministic IDs and processing metadata are covered offline; parent expansion is not yet active.
+- Revisit when: Evaluation identifies a better configuration on a representative corpus.

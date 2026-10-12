@@ -1,0 +1,11 @@
+# ADR-007: Local embedding model, runtime, license, and compatibility
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Laptop operation should not require a paid embedding API. Current remote code uses Gemini text-embedding-004 at 768 dimensions.
+- Decision: Support `google/embeddinggemma-300m` through optional sentence-transformers, with 768-dimensional normalized embeddings and explicit model/version metadata. Keep remote Gemini optional.
+- Alternatives considered: Gemini-only; an unverified “Gemma 2 embedding” name; a hash-vector fallback as a quality provider. The first violates local-first operation, the second is not a verified model identity, and the third is deterministic testing only.
+- Consequences and trade-offs: The model is 300M parameters, has a 2048-token input limit, requires accepting Google Gemma terms on Hugging Face, and adds a large optional dependency/download.
+- Security, privacy, and licensing: Users must accept and comply with the model license and must not send private papers to remote services when local mode is selected.
+- Performance/scaling implications: CPU/RAM/throughput depend on hardware and quantization; no local performance claim is made without a run.
+- Validation/evidence: Hugging Face model card was checked on 2026-10-12 for model name, 768d output, prompts, 2048-token context, and license. Project retrieval benchmark is still required.
+- Revisit when: Local benchmark quality, latency, memory, or licensing requirements change.

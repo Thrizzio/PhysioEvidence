@@ -1,0 +1,11 @@
+# ADR-009: PostgreSQL full-text ranking versus true BM25
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Exact clinical terms and acronyms complement dense retrieval.
+- Decision: Start with PostgreSQL `tsvector` and `ts_rank_cd` as a lexical baseline and describe it as PostgreSQL full-text ranking, not BM25.
+- Alternatives considered: True BM25 extension or external search engine. Both require deliberate operational choices and corpus comparison.
+- Consequences and trade-offs: The lexical baseline is simple and transactional but may differ from BM25 rankings.
+- Security, privacy, and licensing: Queries are parameterized and source text remains in the configured database.
+- Performance/scaling implications: GIN indexing is expected to serve the initial corpus; ranking quality and latency need measurement.
+- Validation/evidence: Schema and tests implement the lexical interface; no BM25 comparison has been run.
+- Revisit when: Evaluation shows a material lexical gap or PostgreSQL scale limits.

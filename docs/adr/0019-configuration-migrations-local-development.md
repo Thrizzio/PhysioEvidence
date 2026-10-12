@@ -1,0 +1,11 @@
+# ADR-019: Configuration, secrets, migrations, and local development
+- Status: Proposed
+- Date: 2026-10-12
+- Context: External services must be optional in tests while schema changes remain reproducible.
+- Decision: Use `.env.example` placeholders, environment-based configuration, explicit schema initialization/migration instructions, and in-memory substitutes for offline tests.
+- Alternatives considered: Secrets in code; implicit schema mutation; mandatory Docker/cloud services. These reduce safety or local reproducibility.
+- Consequences and trade-offs: Users must configure services deliberately; migration tooling will grow as schema versions accumulate.
+- Security, privacy, and licensing: `.env` and keys remain ignored; logs exclude connection secrets.
+- Performance/scaling implications: Local in-memory tests are fast; PostgreSQL is required for production-scale persistence.
+- Validation/evidence: Existing schema initializer and environment example exist; a clean dependency install has not run in this environment.
+- Revisit when: Deployment migration tooling or CI requirements are defined.

@@ -1,0 +1,11 @@
+# ADR-017: Evaluation dataset, metrics, and reproducibility
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Retrieval stages must be compared on the same questions without inventing gains.
+- Decision: Version curated question/expected-chunk data, report Recall@K, MRR, and nDCG where applicable, save outputs, and label synthetic benchmark results as synthetic.
+- Alternatives considered: Qualitative inspection only; generation-only scoring; changing datasets per strategy. These cannot establish comparable retrieval behavior.
+- Consequences and trade-offs: Curation requires maintenance and expected chunk IDs must be updated on re-indexing.
+- Security, privacy, and licensing: Evaluation data must not include unauthorized paper text.
+- Performance/scaling implications: Offline evaluation is bounded and reproducible; larger corpus runs may be scheduled.
+- Validation/evidence: Metrics and a synthetic six-question runner exist; no real-corpus benchmark result is asserted here.
+- Revisit when: A permitted representative corpus and human-reviewed relevance labels exist.

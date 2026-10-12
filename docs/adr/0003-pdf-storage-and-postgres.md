@@ -1,0 +1,11 @@
+# ADR-003: PDF originals versus PostgreSQL metadata/chunks/vectors
+- Status: Proposed
+- Date: 2026-10-12
+- Context: Re-indexing requires original bytes, while retrieval needs relational metadata, text, and vectors.
+- Decision: Store originals through a configurable filesystem adapter first; store document metadata, chunks, and vectors in PostgreSQL/pgvector.
+- Alternatives considered: Store PDFs in PostgreSQL bytea; use object storage immediately; discard originals after extraction. These either complicate local development, require an unselected provider, or prevent reproducible re-indexing.
+- Consequences and trade-offs: Filesystem storage is simple but single-node; an object-storage adapter is a planned deployment extension.
+- Security, privacy, and licensing: Originals remain private local data by default and are not served without authorization.
+- Performance/scaling implications: Database rows stay small and retrieval remains indexed; filesystem usage must be monitored.
+- Validation/evidence: The local adapter and usage accounting are implemented; no cloud quota or cost claim has been validated.
+- Revisit when: A storage provider and official quota/retention/terms links are selected.
