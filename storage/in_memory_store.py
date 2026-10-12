@@ -51,6 +51,12 @@ class InMemoryVectorStore(VectorStore):
                 return False
 
         doc = self.documents.get(chunk.document_id)
+        if filter_criteria.min_year is not None and (not doc or not doc.metadata or doc.metadata.publication_year is None):
+            return False
+        if filter_criteria.max_year is not None and (not doc or not doc.metadata or doc.metadata.publication_year is None):
+            return False
+        if filter_criteria.authors_contain and (not doc or not doc.metadata or not doc.metadata.authors):
+            return False
         if doc and doc.metadata:
             meta = doc.metadata
             if filter_criteria.min_year is not None:

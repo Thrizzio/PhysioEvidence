@@ -65,3 +65,24 @@ def init_db(conn: Optional[psycopg.Connection] = None, schema_path: Optional[Pat
     finally:
         if close_after:
             conn.close()
+
+
+def migrate_db(conn: Optional[psycopg.Connection] = None, migrations_dir: Optional[Path] = None) -> None:
+    """Apply checked-in forward SQL migrations in lexical order."""
+    if migrations_dir is None:
+        migrations_dir = Path(__file__).parent / "migrations"
+    if not migrations_dir.exists():
+        return
+
+    close_after = False
+    if conn is None:
+        conn = get_connection()
+        close_after = True
+    try:
+        with conn.cursor() as cur:
+            for migration_path in sorted(migrations_dir.glob("*.sql")):
+                cur.execute(migration_path.read_text(encoding="utf-8"))
+                logger.info("Applied database migration %s", migration_path.name)
+    finally:
+        if close_after:
+            conn.close()
