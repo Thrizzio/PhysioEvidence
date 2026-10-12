@@ -5,6 +5,7 @@ not download model weights. Install `requirements-local-embeddings.txt` before
 selecting this provider.
 """
 
+import math
 from typing import List
 
 from document_processing.embeddings.base import EmbeddingProvider
@@ -58,8 +59,14 @@ class LocalEmbeddingProvider(EmbeddingProvider):
             convert_to_numpy=True,
         )
         vectors = encoded.tolist()
-        if self._dimensions != len(vectors[0]) if vectors else False:
+        if vectors and self._dimensions != len(vectors[0]):
             vectors = [vector[: self._dimensions] for vector in vectors]
+            # Matryoshka truncation requires re-normalization before cosine
+            # search; otherwise reduced dimensions change score scale.
+            vectors = [
+                [value / (math.sqrt(sum(item * item for item in vector)) or 1.0) for value in vector]
+                for vector in vectors
+            ]
         return vectors
 
     def embed_chunks(self, chunks: List[Chunk]) -> List[Chunk]:

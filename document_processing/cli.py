@@ -9,13 +9,14 @@ from document_processing.loaders.pdf_loader import PDFLoader
 from document_processing.processors.section_detector import SectionDetector
 from document_processing.processors.chunker import SectionAwareChunker
 from document_processing.embeddings.gemini_embeddings import GeminiEmbeddingProvider
+from document_processing.embeddings.local_embeddings import LocalEmbeddingProvider
 from document_processing.pipeline.document_pipeline import DocumentPipeline, DocumentProcessingError
-from storage.db import init_db
+from storage.db import init_db, migrate_db
 from storage.postgres_store import PostgresVectorStore
 
 def main():
     parser = argparse.ArgumentParser(description="PhysioEvidence Document Ingestion Pipeline.")
-    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group = parser.add_mutually_exclusive_group(required=False)
     input_group.add_argument("--input", help="Path to a single input PDF document")
     input_group.add_argument("--input-dir", help="Path to a directory of PDF documents for batch ingestion")
     
@@ -24,6 +25,8 @@ def main():
     parser.add_argument("--no-embeddings", action="store_true", help="Skip generating vector embeddings")
     parser.add_argument("--save-db", action="store_true", help="Persist documents and chunks to PostgreSQL + pgvector")
     parser.add_argument("--init-db", action="store_true", help="Initialize PostgreSQL schema before running ingestion")
+    parser.add_argument("--migrate-db", action="store_true", help="Apply checked-in PostgreSQL migrations")
+    parser.add_argument("--embedding-provider", choices=["gemini", "local"], default=None, help="Embedding provider; defaults to EMBEDDING_PROVIDER or gemini")
     
     args = parser.parse_args()
     
@@ -39,6 +42,20 @@ def main():
         except Exception as e:
             print(f"Database initialization failed: {e}")
             sys.exit(1)
+
+    if args.migrate_db:
+        try:
+            print("Applying database migrations...")
+            migrate_db()
+            print("Database migrations applied successfully.")
+        except Exception as e:
+            print(f"Database migration failed: {e}")
+            sys.exit(1)
+
+    if not args.input and not args.input_dir:
+        if args.init_db or args.migrate_db:
+            return
+        parser.error("one of --input or --input-dir is required")
             
     # Initialize components
     loader = PDFLoader()
@@ -48,7 +65,9 @@ def main():
     embedder = None
     if not args.no_embeddings:
         try:
-            embedder = GeminiEmbeddingProvider()
+            import os
+            provider = args.embedding_provider or os.getenv("EMBEDDING_PROVIDER", "gemini")
+            embedder = LocalEmbeddingProvider() if provider == "local" else GeminiEmbeddingProvider()
         except ValueError as e:
             print(f"Error initializing embedder: {e}")
             print("To run without embeddings, use the --no-embeddings flag.")
