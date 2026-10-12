@@ -129,6 +129,11 @@ class PostgresVectorStore(VectorStore):
 
         rows = []
         for c in chunks:
+            if c.embedding is not None and len(c.embedding) != 768:
+                raise ValueError(
+                    f"Chunk {c.chunk_id} has {len(c.embedding)} embedding dimensions; "
+                    "the current PostgreSQL index requires 768."
+                )
             emb = Vector(c.embedding) if c.embedding is not None else None
             meta_dict = c.metadata.extra.copy() if c.metadata else {}
             if c.metadata and c.metadata.document_title:

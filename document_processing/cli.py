@@ -68,7 +68,7 @@ def main():
             import os
             provider = args.embedding_provider or os.getenv("EMBEDDING_PROVIDER", "gemini")
             embedder = LocalEmbeddingProvider() if provider == "local" else GeminiEmbeddingProvider()
-        except ValueError as e:
+        except (ValueError, RuntimeError) as e:
             print(f"Error initializing embedder: {e}")
             print("To run without embeddings, use the --no-embeddings flag.")
             sys.exit(1)

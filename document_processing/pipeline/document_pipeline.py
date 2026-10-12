@@ -77,10 +77,18 @@ class DocumentPipeline:
         try:
             chunks = self.chunker.chunk(structured_doc)
             logger.info(f"Generated {len(chunks)} chunks")
+            if not chunks:
+                raise ValueError("No indexable text chunks were produced.")
         except Exception as e:
             raise DocumentProcessingError(file_path, "chunking", str(e)) from e
-            
+
         # 4. Embed
+        if generate_embeddings and self.embedder is None:
+            raise DocumentProcessingError(
+                file_path,
+                "embedding",
+                "Embedding generation was requested but no embedding provider is configured.",
+            )
         if generate_embeddings and self.embedder:
             try:
                 chunks = self.embedder.embed_chunks(chunks)
