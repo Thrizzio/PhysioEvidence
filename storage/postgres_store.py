@@ -236,11 +236,11 @@ class PostgresVectorStore(VectorStore):
                         page_end=row["page_end"],
                         score=float(row["score"]),
                         document_title=row["document_title"],
-                        authors=row["authors"],
-                        publication_year=row["publication_year"],
-                        journal=row["journal"],
-                        doi=row["doi"],
-                        source_url=row["source_url"],
+                        authors=row.get("authors"),
+                        publication_year=row.get("publication_year"),
+                        journal=row.get("journal"),
+                        doi=row.get("doi"),
+                        source_url=row.get("source_url"),
                         metadata=extra
                     ))
         return results
@@ -320,11 +320,11 @@ class PostgresVectorStore(VectorStore):
                         page_end=row["page_end"],
                         score=float(row["score"]),
                         document_title=row["document_title"],
-                        authors=row["authors"],
-                        publication_year=row["publication_year"],
-                        journal=row["journal"],
-                        doi=row["doi"],
-                        source_url=row["source_url"],
+                        authors=row.get("authors"),
+                        publication_year=row.get("publication_year"),
+                        journal=row.get("journal"),
+                        doi=row.get("doi"),
+                        source_url=row.get("source_url"),
                         metadata=extra
                     ))
         return results
