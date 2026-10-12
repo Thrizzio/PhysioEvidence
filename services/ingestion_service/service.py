@@ -58,6 +58,23 @@ class IngestionManager:
             self.jobs[duplicate.job_id] = duplicate
             return duplicate
 
+        # A service restart should not cause a stored original to be embedded
+        # again. The content hash is the durable idempotency key even when the
+        # in-memory job registry has been rebuilt.
+        if self.original_store.path_for(content_hash).exists():
+            duplicate = IngestionJob(
+                job_id=str(uuid.uuid4()),
+                filename=filename,
+                content_hash=content_hash,
+                document_id=content_hash,
+                state=JobState.duplicate,
+                progress=100,
+                file_size_bytes=len(content),
+                completed_at=datetime.now(timezone.utc),
+            )
+            self.jobs[duplicate.job_id] = duplicate
+            return duplicate
+
         # Parse the actual bytes before retaining them. Extension checks alone
         # are not enough to reject malformed or scanned PDFs.
         temporary_path = self.original_store.root / f".validate-{secrets.token_hex(8)}.pdf"
