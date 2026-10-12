@@ -28,6 +28,11 @@ class SearchResult(BaseModel):
     page_end: Optional[int] = None
     score: float  # Cosine similarity (1.0 = identical) or text rank score
     document_title: Optional[str] = None
+    authors: Optional[List[str]] = None
+    publication_year: Optional[int] = None
+    journal: Optional[str] = None
+    doi: Optional[str] = None
+    source_url: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 class VectorStore(ABC):

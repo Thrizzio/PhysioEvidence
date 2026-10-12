@@ -84,6 +84,11 @@ class DocumentPipeline:
         if generate_embeddings and self.embedder:
             try:
                 chunks = self.embedder.embed_chunks(chunks)
+                if self.vector_store is not None:
+                    # Persist the compatibility contract beside each vector.
+                    setattr(self.vector_store, "embedding_model", self.embedder.model_id)
+                    setattr(self.vector_store, "embedding_dimensions", self.embedder.dimensions)
+                    setattr(self.vector_store, "embedding_normalized", self.embedder.normalized)
                 logger.info(f"Generated embeddings for {len(chunks)} chunks")
             except Exception as e:
                 raise DocumentProcessingError(file_path, "embedding", str(e)) from e

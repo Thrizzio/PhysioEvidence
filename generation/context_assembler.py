@@ -13,6 +13,12 @@ class CitationSource(BaseModel):
     section: Optional[str] = None
     pages: Optional[str] = None
     similarity_score: float
+    excerpt: Optional[str] = None
+    authors: Optional[List[str]] = None
+    publication_year: Optional[int] = None
+    journal: Optional[str] = None
+    doi: Optional[str] = None
+    source_url: Optional[str] = None
 
 class AssembledContext(BaseModel):
     """
@@ -70,7 +76,13 @@ class ContextAssembler:
                 title=title,
                 section=section,
                 pages=pages_str,
-                similarity_score=round(item.score, 4)
+                similarity_score=round(item.score, 4),
+                excerpt=item.content.strip(),
+                authors=item.authors,
+                publication_year=item.publication_year,
+                journal=item.journal,
+                doi=item.doi,
+                source_url=item.source_url,
             ))
             accumulated_chars += len(block) + 2
 

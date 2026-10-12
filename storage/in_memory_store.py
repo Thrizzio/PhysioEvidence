@@ -94,6 +94,11 @@ class InMemoryVectorStore(VectorStore):
                 page_end=chunk.metadata.page_end if chunk.metadata else None,
                 score=sim,
                 document_title=doc_title,
+                authors=doc.metadata.authors if doc else None,
+                publication_year=doc.metadata.publication_year if doc else None,
+                journal=doc.metadata.journal if doc else None,
+                doi=doc.metadata.doi if doc else None,
+                source_url=doc.metadata.source_url if doc else None,
                 metadata=chunk.metadata.extra if chunk.metadata else {}
             ))
 
@@ -140,6 +145,11 @@ class InMemoryVectorStore(VectorStore):
                 page_end=chunk.metadata.page_end if chunk.metadata else None,
                 score=score,
                 document_title=doc_title,
+                authors=doc.metadata.authors if doc else None,
+                publication_year=doc.metadata.publication_year if doc else None,
+                journal=doc.metadata.journal if doc else None,
+                doi=doc.metadata.doi if doc else None,
+                source_url=doc.metadata.source_url if doc else None,
                 metadata=chunk.metadata.extra if chunk.metadata else {}
             ))
 

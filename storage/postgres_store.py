@@ -206,6 +206,11 @@ class PostgresVectorStore(VectorStore):
             c.page_end,
             c.extra_metadata,
             d.title AS document_title,
+            d.authors,
+            d.publication_year,
+            d.journal,
+            d.doi,
+            d.source_url,
             1.0 - (c.embedding <=> %(query_emb)s) AS score
         FROM chunks c
         JOIN documents d ON c.document_id = d.document_id
@@ -231,6 +236,11 @@ class PostgresVectorStore(VectorStore):
                         page_end=row["page_end"],
                         score=float(row["score"]),
                         document_title=row["document_title"],
+                        authors=row["authors"],
+                        publication_year=row["publication_year"],
+                        journal=row["journal"],
+                        doi=row["doi"],
+                        source_url=row["source_url"],
                         metadata=extra
                     ))
         return results
@@ -280,6 +290,11 @@ class PostgresVectorStore(VectorStore):
             c.page_end,
             c.extra_metadata,
             d.title AS document_title,
+            d.authors,
+            d.publication_year,
+            d.journal,
+            d.doi,
+            d.source_url,
             ts_rank_cd(c.tsv, plainto_tsquery('english', %(query_text)s)) AS score
         FROM chunks c
         JOIN documents d ON c.document_id = d.document_id
@@ -305,6 +320,11 @@ class PostgresVectorStore(VectorStore):
                         page_end=row["page_end"],
                         score=float(row["score"]),
                         document_title=row["document_title"],
+                        authors=row["authors"],
+                        publication_year=row["publication_year"],
+                        journal=row["journal"],
+                        doi=row["doi"],
+                        source_url=row["source_url"],
                         metadata=extra
                     ))
         return results
