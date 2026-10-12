@@ -1,213 +1,188 @@
 # PhysioEvidence
-PhysioEvidence is a RAG-based research assistant designed to help physiotherapists
-explore scientific literature and retrieve evidence relevant to clinical questions.
-**The core idea:** Find the right research, retrieve the right parts of it, and generate
-answers grounded in the original sources.
-## What the system does
-Research Papers
- ↓
-Document Ingestion
- ↓
-Text Extraction & Cleaning
- ↓
-Section Detection
- ↓
-Context-Aware Chunking
- ↓
-Embeddings
- ↓
-PostgreSQL + pgvector
- ↓
-Retrieval
- ↓
-Reranking
- ↓
-LLM
- ↓
-Source-Grounded Answer
-The current focus is the document-processing and ingestion pipeline. Retrieval and
-generation components will be added incrementally.
-## Current Implementation
-### Document Processing
-Research papers are processed using PyMuPDF for PDF text extraction, Pydantic for
-structured document models, deterministic text cleaning and normalization, section
-detection for common research-paper structures, and section-aware chunking while
-preserving document context.
-The goal is to avoid treating an entire research paper as an undifferentiated block of
-text.
-Paper
-■■■ Abstract
-■■■ Introduction
-■■■ Methods
-■■■ Results
-■■■ Discussion
-■■■ References
-## Planned Retrieval Pipeline
-### 1. Semantic Retrieval
-Documents will be embedded and stored using Gemini embeddings, PostgreSQL, and pgvector.
-A user's question can then retrieve chunks based on semantic similarity rather than exact
-keyword matches.
-### 2. Hybrid Retrieval
-Combine semantic/vector search with traditional keyword-based retrieval. This is useful
-when exact terminology matters, particularly for medical and scientific literature.
-### 3. Parent-Child Chunking
-The system will experiment with smaller retrieval chunks while retaining larger
-contextual units. A small child chunk can provide precise retrieval while corresponding
-parent context can be supplied to the LLM to reduce loss of surrounding information.
-### 4. Multi-Query Retrieval
-A single user question can be rewritten into multiple search queries. This can help when
-a question can be expressed using different terminology.
-### 5. Reranking
-Initial retrieval can return a larger candidate set. A reranking stage can then evaluate
-candidates more carefully and pass the most relevant results to the LLM.
-### 6. Metadata Filtering
-Research papers contain useful metadata such as authors, publication year, journal, DOI,
-source, and research section. Metadata can be used to narrow retrieval before semantic
-search or alongside it.
-## Answer Generation
-The final language model should answer questions using retrieved research rather than
-relying solely on its pretrained knowledge. The intended flow is:
-Question
- ↓
-Retrieve Evidence
- ↓
-Select Relevant Context
- ↓
-LLM
- ↓
-Answer + Source References
-The system should be able to identify which research was used to support an answer.
-## Technology
-**Current / Planned Stack**
-• Python
-• FastAPI
-• LangChain
-• Gemini
-• PostgreSQL
-• pgvector
-• PyMuPDF
-• Pydantic
-• Docker
-## Development Roadmap
-### Phase 1 — Document Processing
-✓ Project structure • ✓ Pydantic document models • ✓ PDF extraction • ✓ Basic text
-cleaning • ✓ Section detection • ✓ Context-aware chunking • ✓ Processing tests
-### Phase 2 — Embeddings & Storage
-✓ Gemini embedding integration • ✓ PostgreSQL schema • ✓ pgvector integration • ✓
-Document and chunk indexing • ✓ In-memory vector store
-### Phase 3 — Retrieval
-✓ Semantic retrieval • ✓ Metadata filtering • ✓ Hybrid retrieval (Reciprocal Rank Fusion) •
-✓ Cross-encoder/heuristic reranking
-### Phase 4 — Generation & Evaluation
-✓ Source-grounded generation • ✓ Citation handling ([Source N]) • ✓ Refusal on insufficient evidence •
-✓ Retrieval evaluation suite • ✓ Benchmark comparison CLI
 
-## Why this project?
-Scientific literature is continuously growing, while finding the relevant evidence for a
-specific question can require searching across many papers. PhysioEvidence explores how
-modern retrieval techniques can be combined to make large collections of physiotherapy
-research easier to search and understand while keeping generated answers connected to
-their underlying sources.
+PhysioEvidence is an evidence-grounded research assistant for physiotherapy
+literature. It has two deliberately separate websites:
 
-## Core Modules & Architecture
+1. **Research website (`web/research/`)** — a minimal public question box. It
+   calls the research API and displays a grounded answer, exact retrieved
+   excerpts, and document/page/section metadata.
+2. **Private ingestion website (`web/admin/`)** — a corpus-owner-only upload
+   page. It calls the separate ingestion service and shows validation,
+   deduplication, indexing state, errors, and storage usage.
 
-### 1. Document Processing (`document_processing/`)
-- Extracts PDF text page-by-page using PyMuPDF.
-- Cleans whitespace and repairs line-broken hyphenated words deterministically.
-- Detects standard scientific paper sections (Abstract, Introduction, Methods, Results, Discussion, etc.).
-- Hierarchically chunks text by section, paragraph, and sentence boundaries.
-- Generates 768-dimensional vector embeddings with Gemini `text-embedding-004`.
+The public site has no upload controls. The ingestion API requires
+`INGESTION_ADMIN_TOKEN` before it will accept or list documents.
 
-### 2. Storage & Vector DB (`storage/`)
-- Relational PostgreSQL schema with `pgvector` extension.
-- HNSW index on chunk embeddings for fast cosine similarity search.
-- GIN index on text search vectors (`tsvector`) for full-text search.
-- In-memory vector store fallback for instant offline execution and testing.
+## Implemented architecture
 
-### 3. Retrieval (`retrieval/`)
-- **Semantic Vector Search**: Asymmetric query embedding with cosine distance ranking.
-- **Hybrid Retrieval**: Combines dense vector search and sparse full-text search via **Reciprocal Rank Fusion (RRF)**.
-- **Reranker**: Second-stage scoring with empirical section weighting (Results, Conclusions) and exact term proximity.
-
-### 4. Generation & Attribution (`generation/`)
-- Strictly grounded clinical synthesis using Google Gemini.
-- Mandatory source citations (`[Source 1]`) mapped directly to document title, section, and page numbers.
-- Explicit refusal when evidence is absent or insufficient to answer the clinical question.
-
-### 5. Evaluation & Benchmarking (`evaluation/`)
-- Benchmark dataset of realistic physiotherapy clinical questions with curated ground truth.
-- Computes standard information retrieval metrics: **Recall@K**, **Precision@K**, **MRR**, and **nDCG@K**.
-
-### 6. Observability (`observability/`)
-- Non-invasive LangSmith tracing integration for inspecting questions, retrieved chunks, reranking scores, latencies, and token consumption. Enabled via `LANGSMITH_TRACING=true`.
-
----
-
-## Installation & Setup
-
-1. Clone repository and install dependencies:
-```bash
-pip install -r requirements.txt
+```text
+Research website                 Private ingestion website
+       │                                  │
+       ▼                                  ▼
+services/research_api       services/ingestion_service
+       │                                  │
+       └──────────────┬───────────────────┘
+                      ▼
+       document_processing / storage / retrieval / generation
+                      │
+             PostgreSQL + pgvector
 ```
 
-2. Configure environment variables in `.env` (refer to `.env.example`):
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=physioevidence
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
+The ingestion flow is:
+
+```text
+PDF upload → size/type/parser validation → SHA-256 deduplication
+→ PyMuPDF pages → section detection → deterministic recursive chunks
+→ configured embeddings → PostgreSQL/pgvector persistence → terminal job state
 ```
 
-3. (Optional) Initialize the PostgreSQL database schema:
-```bash
-python -m document_processing.cli --init-db
+The research flow is:
+
+```text
+Question → dense or hybrid RRF retrieval → bounded context
+→ grounded LLM synthesis → verified source references
 ```
 
----
+The application refuses to present a generated answer as verified when the LLM
+returns a citation number not present in the retrieved context. Retrieved PDF
+text is treated as untrusted data, not instructions.
 
-## Usage Guide
+## Repository layout
 
-### Ingesting Documents
+- `document_processing/` — PyMuPDF extraction, cleaning, section detection,
+  deterministic section-aware chunking, and embedding providers.
+- `storage/` — PostgreSQL/pgvector schema and store plus an in-memory store for
+  offline tests. `storage/migrations/` contains forward migrations.
+- `retrieval/` — dense retrieval, PostgreSQL/in-memory lexical retrieval, RRF
+  hybrid retrieval, and optional reranking.
+- `generation/` — context budgeting, grounded prompts, citation mapping, and
+  LLM provider abstraction.
+- `rag/` — end-to-end question orchestration and CLI.
+- `services/research_api/` — public question API; no upload endpoints.
+- `services/ingestion_service/` — private upload validation, job state,
+  original-PDF storage, deduplication, and indexing API.
+- `web/research/` — public research website.
+- `web/admin/` — private admin website.
+- `evaluation/` — retrieval metrics and a small synthetic benchmark corpus.
+- `docs/adr/` — decision records and validation status.
 
-Process a single PDF:
+## Local setup
+
+Python 3.14 is the project target.
+
 ```bash
-python -m document_processing.cli --input data/sample_paper.pdf --save-db
+python3 -m venv .venv
+. .venv/bin/activate                 # Windows: .venv\Scripts\activate
+python3 -m pip install -r requirements.txt
+cp .env.example .env                # Windows: copy .env.example .env
 ```
 
-Batch-ingest an entire directory of PDFs:
+Set actual local values in `.env`. Never commit `.env`, API keys, database
+passwords, private PDFs, or copyrighted papers that you are not allowed to
+redistribute.
+
+Initialize a PostgreSQL 16+ database with pgvector:
+
 ```bash
-python -m document_processing.cli --input-dir data/papers/ --recursive --save-db
+python3 -m document_processing.cli --init-db
 ```
 
-Inspect chunking without generating embeddings (dry run):
+For a database created before processing metadata was added, run the migration
+SQL in `storage/migrations/001_processing_metadata.sql` using your migration
+workflow before starting ingestion.
+
+## Run both APIs
+
+The APIs can be started independently, which is also how the two sites remain
+separate in deployment:
+
 ```bash
-python -m document_processing.cli --input data/sample_paper.pdf --output chunks.json --no-embeddings
+uvicorn services.research_api.app:app --host 127.0.0.1 --port 8000
+uvicorn services.ingestion_service.app:app --host 127.0.0.1 --port 8001
 ```
 
-### Asking Clinical Questions (RAG)
+Configure these values in `.env` for the private service:
 
-Run an evidence-grounded query with hybrid retrieval and reranking:
-```bash
-python -m rag.cli --question "What quadriceps symmetry index is recommended before return to sport after ACL reconstruction?" --hybrid --rerank
+```text
+INGESTION_ADMIN_TOKEN=use_a_long_local_secret
+INGESTION_STORAGE_ROOT=./data/originals
+RESEARCH_UI_ORIGIN=http://localhost:8080
+INGESTION_UI_ORIGIN=http://localhost:8081
 ```
 
-Filter by specific paper sections or publication year:
+Serve the websites separately:
+
 ```bash
-python -m rag.cli --question "What are the outcomes of heavy slow resistance training in Achilles tendinopathy?" --section Results --min-year 2020
+python3 -m http.server 8080 --directory web/research
+python3 -m http.server 8081 --directory web/admin
 ```
 
-### Running Retrieval Benchmarks
+The HTML files default to the API URLs above. For deployment, set the
+`data-api-base` value in each site and configure exact CORS origins. Do not use
+the admin site or upload API on a public network until authentication,
+authorization, rate limits, TLS, and secret management are configured.
 
-Evaluate and compare retrieval strategies (Pure Vector vs Hybrid RRF vs Reranking) across the curated clinical evaluation dataset:
+## Ingestion commands
+
+Dry-run a PDF without embeddings:
+
 ```bash
-python -m evaluation.run_benchmark
+python3 -m document_processing.cli --input data/sample_paper.pdf --output chunks.json --no-embeddings
 ```
 
-### Running Test Suite
+Ingest a folder into PostgreSQL:
 
-Run all 45 automated unit and component tests:
 ```bash
-pytest
+python3 -m document_processing.cli --input-dir data/papers --recursive --save-db
 ```
+
+The standalone ingestion website uses the same canonical pipeline; it does not
+duplicate extraction or chunking logic. Content-derived document IDs and
+deterministic chunk IDs make repeated submission of identical bytes idempotent.
+
+## Embeddings
+
+Gemini embeddings remain an optional remote provider. The local-first provider
+is optional because model weights are large:
+
+```bash
+python3 -m pip install -r requirements-local-embeddings.txt
+```
+
+Set `EMBEDDING_PROVIDER=local` to use `google/embeddinggemma-300m` through
+sentence-transformers. The model card was checked for the model name, Gemma
+license, 768-dimensional output, 2048-token input limit, and query/document
+prompt behavior. Local CPU/RAM throughput and retrieval quality have not yet
+been benchmarked on a representative PhysioEvidence corpus, so this is a
+configured option rather than an improvement claim. Never mix dimensions or
+model versions in one vector index.
+
+## Query and retrieval CLI
+
+```bash
+python3 -m rag.cli --question "What quadriceps symmetry index is needed after ACL reconstruction?" --hybrid --rerank
+python3 -m evaluation.run_benchmark
+```
+
+The checked-in evaluation corpus is synthetic and suitable for exercising
+metrics and strategy comparison. It is not evidence from real papers and its
+results must not be reported as clinical retrieval performance.
+
+## Verification
+
+```bash
+python3 -m compileall -q .
+python3 -m pytest -q
+```
+
+External PostgreSQL, pgvector, Gemini, LangSmith, and cloud-storage checks
+require local credentials/services and are not silently represented as passed.
+LangSmith is disabled by default and can be enabled with the documented
+environment variables in `.env.example`.
+
+## ADRs and project record
+
+- [Implementation plan](docs/PLAN.md)
+- [Open questions](docs/OPEN_QUESTIONS.md)
+- [Progress log](docs/PROGRESS.md)
+- [ADR index](docs/adr/README.md)

@@ -1,13 +1,16 @@
 # Architecture
 
 ## Status
-Production Foundation Implemented — Phases 1-5 active:
+Production Foundation Implemented — backend phases 1-5 active, with separate
+public research and private ingestion service boundaries:
 - Phase 1: Document Processing (PDF extraction, text cleaning, section detection, context-aware chunking).
 - Phase 2: Embeddings & Storage (PostgreSQL + pgvector, schema, HNSW index, in-memory test store).
 - Phase 3: Retrieval (Dense vector retrieval, Hybrid search with Reciprocal Rank Fusion, section-weighted Reranker).
 - Phase 4: Generation (Context assembly with budget limits, strict source attribution `[Source N]`, refusal on insufficient evidence, Gemini LLM).
 - Phase 5: Evaluation (Benchmark dataset of clinical queries, Recall@K, MRR, nDCG@K).
 - Observability: Non-invasive LangSmith tracing integration.
+- Websites: `web/research/` contains only the public Q&A UI; `web/admin/` is a
+  separate corpus-owner upload/status UI protected by the ingestion API.
 
 ## Modules
 
@@ -59,6 +62,15 @@ Production Foundation Implemented — Phases 1-5 active:
 
 ### 7. Observability (`observability/`)
 - Non-invasive tracing hooks in `tracing.py` that integrate with LangSmith when `LANGSMITH_TRACING=true` and credentials are provided, running with zero overhead when disabled.
+
+### 8. Service boundaries (`services/`)
+- **`research_api/`**: Public query endpoint (`POST /api/query`) and health
+  endpoint. It never accepts document uploads.
+- **`ingestion_service/`**: Private upload, job status, document list, and
+  storage usage endpoints. It validates actual PDF parser behavior, applies
+  content-hash idempotency, and calls the canonical document pipeline.
+- Both services build on shared domain abstractions rather than duplicating
+  extraction, chunking, storage, or generation logic.
 
 ## Data Flow
 
