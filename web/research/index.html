@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhysioEvidence Research</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-api-base="http://localhost:8000">
+  <main class="shell">
+    <header>
+      <p class="eyebrow">PhysioEvidence</p>
+      <h1>Ask the physiotherapy literature.</h1>
+      <p class="intro">A focused research assistant. Answers are limited to the documents in the evidence corpus and show exactly where each supporting passage came from.</p>
+    </header>
+
+    <section class="question-card" aria-labelledby="question-heading">
+      <h2 id="question-heading">Your research question</h2>
+      <form id="question-form">
+        <label for="question">Question</label>
+        <textarea id="question" name="question" rows="4" required minlength="3" placeholder="For example: What quadriceps symmetry index is used before return to sport after ACL reconstruction?"></textarea>
+        <div class="form-row">
+          <label class="checkbox"><input id="hybrid" type="checkbox" checked> Use exact terms with semantic search</label>
+          <button type="submit">Search evidence</button>
+        </div>
+      </form>
+      <div class="examples" aria-label="Example questions">
+        <button type="button" data-example="How does heavy slow resistance compare with eccentric training for Achilles tendinopathy?">Achilles loading</button>
+        <button type="button" data-example="What evidence supports proximal hip strengthening for patellofemoral pain?">Patellofemoral pain</button>
+        <button type="button" data-example="What is the evidence for motor control exercise in chronic low back pain?">Low back pain</button>
+      </div>
+    </section>
+
+    <section id="status" class="status" role="status" aria-live="polite"></section>
+    <section id="answer" class="answer" hidden aria-labelledby="answer-heading">
+      <h2 id="answer-heading">Evidence-grounded answer</h2>
+      <div id="answer-text" class="answer-text"></div>
+      <p id="evidence-note" class="evidence-note"></p>
+      <div id="sources" class="sources"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
