@@ -5,7 +5,6 @@ import logging
 import secrets
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 from document_processing.loaders.pdf_loader import PDFLoader
@@ -46,6 +45,18 @@ class IngestionManager:
             self._failed_uploads += 1
             raise
 
+        # Parse the actual bytes before retaining them. Extension checks alone
+        # are not enough to reject malformed or scanned PDFs.
+        temporary_path = self.original_store.root / f".validate-{secrets.token_hex(8)}.pdf"
+        try:
+            temporary_path.write_bytes(content)
+            extracted = PDFLoader().load(str(temporary_path))
+        except Exception:
+            self._failed_uploads += 1
+            raise
+        finally:
+            temporary_path.unlink(missing_ok=True)
+
         existing_id = self.hash_to_job.get(content_hash)
         if existing_id:
             existing = self.jobs[existing_id]
@@ -75,18 +86,7 @@ class IngestionManager:
             self.jobs[duplicate.job_id] = duplicate
             return duplicate
 
-        # Parse the actual bytes before retaining them. Extension checks alone
-        # are not enough to reject malformed or scanned PDFs.
-        temporary_path = self.original_store.root / f".validate-{secrets.token_hex(8)}.pdf"
-        try:
-            temporary_path.write_bytes(content)
-            extracted = PDFLoader().load(str(temporary_path))
-            path = self.original_store.save(content, content_hash)
-        except Exception:
-            self._failed_uploads += 1
-            raise
-        finally:
-            temporary_path.unlink(missing_ok=True)
+        path = self.original_store.save(content, content_hash)
 
         job = IngestionJob(
             job_id=str(uuid.uuid4()),
@@ -124,6 +124,22 @@ class IngestionManager:
 
     def get(self, job_id: str) -> IngestionJob | None:
         return self.jobs.get(job_id)
+
+    def record_failure(self, filename: str, content: bytes, error: str) -> IngestionJob:
+        """Create a terminal job record for a per-file upload failure."""
+        content_hash = hashlib.sha256(content).hexdigest()
+        job = IngestionJob(
+            job_id=str(uuid.uuid4()),
+            filename=filename,
+            content_hash=content_hash,
+            state=JobState.failed,
+            progress=100,
+            file_size_bytes=len(content),
+            error=error,
+            completed_at=datetime.now(timezone.utc),
+        )
+        self.jobs[job.job_id] = job
+        return job
 
     def list_documents(self) -> list[DocumentStatus]:
         return [DocumentStatus(

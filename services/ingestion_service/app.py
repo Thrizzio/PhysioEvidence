@@ -1,13 +1,12 @@
 """Private admin API for uploading and monitoring documents."""
 
+import logging
 import hmac
 import os
-import logging
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from document_processing.embeddings.gemini_embeddings import GeminiEmbeddingProvider
 from document_processing.loaders.pdf_loader import PDFLoader
 from document_processing.pipeline.document_pipeline import DocumentPipeline
 from document_processing.processors.chunker import SectionAwareChunker
@@ -75,11 +74,13 @@ def create_app(manager: IngestionManager | None = None) -> FastAPI:
                 raise HTTPException(status_code=503, detail="Ingestion service is not configured.") from exc
         results = []
         for upload_file in files:
+            content = b""
             try:
                 content = await upload_file.read()
                 results.append(app.state.manager.submit(upload_file.filename or "upload.pdf", content))
             except Exception as exc:
-                raise HTTPException(status_code=422, detail=str(exc)) from exc
+                filename = upload_file.filename or "upload.pdf"
+                results.append(app.state.manager.record_failure(filename, content, str(exc)))
         return results
 
     @app.get("/api/jobs/{job_id}", response_model=IngestionJob, dependencies=[Depends(require_admin)])
