@@ -1,5 +1,5 @@
 import re
-import uuid
+import hashlib
 from typing import List
 from document_processing.models.document import StructuredDocument
 from document_processing.models.chunk import Chunk, ChunkMetadata
@@ -14,6 +14,8 @@ class SectionAwareChunker:
         self.target_chunk_size = target_chunk_size
         self.chunk_overlap = chunk_overlap
         self.min_chunk_size = min_chunk_size
+        self.strategy = "section-recursive-char-v1"
+        self.version = "1"
 
     def _split_into_sentences(self, text: str) -> List[str]:
         """Naive sentence splitter."""
@@ -68,11 +70,16 @@ class SectionAwareChunker:
         """
         all_chunks = []
         chunk_index = 0
-        
-        for section in document.sections:
+
+        for section_index, section in enumerate(document.sections):
             text_chunks = self._chunk_text(section.content)
+            parent_id = hashlib.sha256(
+                f"{document.document_id}:section:{section_index}:{section.name}".encode("utf-8")
+            ).hexdigest()[:32]
             
             for text_chunk in text_chunks:
+                stable_key = f"{document.document_id}:{self.strategy}:{self.version}:{chunk_index}:{text_chunk}"
+                chunk_id = hashlib.sha256(stable_key.encode("utf-8")).hexdigest()
                 metadata = ChunkMetadata(
                     document_title=document.metadata.title,
                     section=section.name,
@@ -81,15 +88,19 @@ class SectionAwareChunker:
                 )
                 
                 chunk = Chunk(
-                    chunk_id=str(uuid.uuid4()),
+                    chunk_id=chunk_id,
                     document_id=document.document_id,
                     chunk_index=chunk_index,
                     content=text_chunk,
-                    metadata=metadata
+                    metadata=metadata,
+                    parent_id=parent_id,
+                    chunking_strategy=self.strategy,
+                    chunking_version=self.version,
+                    character_count=len(text_chunk),
+                    token_count=len(text_chunk.split()),
                 )
                 
                 all_chunks.append(chunk)
                 chunk_index += 1
                 
         return all_chunks
-

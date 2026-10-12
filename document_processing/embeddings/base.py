@@ -22,3 +22,17 @@ class EmbeddingProvider(ABC):
         """
         pass
 
+    @property
+    def dimensions(self) -> int:
+        """Output dimensionality used to validate index compatibility."""
+        raise NotImplementedError
+
+    @property
+    def model_id(self) -> str:
+        """Stable model/version identifier stored with processing metadata."""
+        raise NotImplementedError
+
+    @property
+    def normalized(self) -> bool:
+        """Whether output vectors are L2-normalized."""
+        return False

@@ -1,5 +1,6 @@
 import os
-import uuid
+import hashlib
+from datetime import datetime, timezone
 import pymupdf as fitz
 from document_processing.loaders.base import DocumentLoader
 from document_processing.models.document import ExtractedDocument, Page, DocumentMetadata
@@ -16,7 +17,12 @@ class PDFLoader(DocumentLoader):
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"PDF file not found: {file_path}")
             
-        document_id = str(uuid.uuid4())
+        with open(file_path, "rb") as source_file:
+            file_bytes = source_file.read()
+        content_hash = hashlib.sha256(file_bytes).hexdigest()
+        # Content identity makes repeated ingestion idempotent while allowing a
+        # changed file to be treated as a new immutable processing input.
+        document_id = content_hash
         filename = os.path.basename(file_path)
         
         pages = []
@@ -37,7 +43,9 @@ class PDFLoader(DocumentLoader):
                     total_text_length += len(text.strip())
                     
                 # If there are pages but almost no text, it might need OCR
-                if len(doc) > 0 and (total_text_length / len(doc)) < 50:
+                if len(doc) == 0:
+                    raise ValueError("PDF contains no pages and cannot be indexed.")
+                if (total_text_length / len(doc)) < 50:
                     # Arbitrary threshold: if avg chars per page is < 50, probably a scanned document
                     raise ValueError(f"PDF contains very little extractable text. OCR may be required. (Avg chars/page: {total_text_length / len(doc):.1f})")
                     
@@ -50,6 +58,11 @@ class PDFLoader(DocumentLoader):
             document_id=document_id,
             source_path=file_path,
             filename=filename,
-            metadata=doc_metadata,
+            metadata=doc_metadata.model_copy(update={
+                "content_hash": content_hash,
+                "file_size_bytes": len(file_bytes),
+                "source_type": "pdf",
+                "ingestion_time": datetime.now(timezone.utc),
+            }),
             pages=pages
         )

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
@@ -8,6 +9,13 @@ class DocumentMetadata(BaseModel):
     journal: Optional[str] = None
     doi: Optional[str] = Field(None, alias="DOI")
     source_url: Optional[str] = None
+    source_type: Optional[str] = None
+    license: Optional[str] = None
+    access_status: Optional[str] = None
+    content_hash: Optional[str] = None
+    file_size_bytes: Optional[int] = None
+    ingestion_time: Optional[datetime] = None
+    extraction_status: str = "extracted"
     # Additional flexible metadata
     extra: Dict[str, Any] = Field(default_factory=dict)
 
@@ -25,6 +33,10 @@ class ExtractedDocument(BaseModel):
     filename: str
     metadata: DocumentMetadata = Field(default_factory=DocumentMetadata)
     pages: List[Page] = Field(default_factory=list)
+
+    @property
+    def page_count(self) -> int:
+        return len(self.pages)
 
     @property
     def raw_text(self) -> str:
@@ -49,4 +61,3 @@ class StructuredDocument(BaseModel):
     filename: str
     metadata: DocumentMetadata
     sections: List[Section] = Field(default_factory=list)
-

@@ -23,6 +23,20 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
             
         genai.configure(api_key=api_key)
 
+    @property
+    def dimensions(self) -> int:
+        return 768
+
+    @property
+    def model_id(self) -> str:
+        return self.model_name
+
+    @property
+    def normalized(self) -> bool:
+        # Gemini's API behavior is provider-defined; cosine distance does not
+        # require us to claim normalization here.
+        return False
+
     def embed_chunks(self, chunks: List[Chunk]) -> List[Chunk]:
         """
         Generates embeddings for chunks in batches.
@@ -77,4 +91,3 @@ class GeminiEmbeddingProvider(EmbeddingProvider):
         except Exception as e:
             logger.error(f"Failed to generate query embedding: {str(e)}")
             raise RuntimeError(f"Query embedding API failure: {str(e)}") from e
-

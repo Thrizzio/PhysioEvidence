@@ -52,7 +52,9 @@ class SectionDetector:
             # Fallback: treat whole document as one section
             sections.append(Section(
                 name="Body",
-                content=clean_text(raw_text)
+                content=clean_text(raw_text),
+                page_start=1 if document.pages else None,
+                page_end=len(document.pages) if document.pages else None,
             ))
             return sections
             
@@ -63,7 +65,9 @@ class SectionDetector:
             if preamble:
                 sections.append(Section(
                     name="Preamble",
-                    content=clean_text(preamble)
+                    content=clean_text(preamble),
+                    page_start=self._page_for_offset(document, first_match_start),
+                    page_end=self._page_for_offset(document, max(0, first_match_start - 1)),
                 ))
                 
         # Extract sections based on match boundaries
@@ -82,8 +86,20 @@ class SectionDetector:
             if content:
                 sections.append(Section(
                     name=std_name,
-                    content=clean_text(content)
+                    content=clean_text(content),
+                    page_start=self._page_for_offset(document, start_idx),
+                    page_end=self._page_for_offset(document, max(start_idx, end_idx - 1)),
                 ))
                 
         return sections
 
+    @staticmethod
+    def _page_for_offset(document: ExtractedDocument, offset: int) -> Optional[int]:
+        """Map a raw-text offset back to the preserved one-based PDF page."""
+        cursor = 0
+        for page in document.pages:
+            page_end = cursor + len(page.text)
+            if offset <= page_end:
+                return page.page_number
+            cursor = page_end + 2  # ExtractedDocument.raw_text joins pages with two newlines.
+        return document.pages[-1].page_number if document.pages else None
