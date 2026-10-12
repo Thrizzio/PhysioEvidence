@@ -38,17 +38,18 @@ def create_app(rag=None) -> FastAPI:
             allow_methods=["GET", "POST"],
             allow_headers=["Content-Type"],
         )
-    app.state.rag = rag
+    app.state.rags = {"hybrid": rag} if rag is not None else {}
 
     @app.get("/health")
     def health() -> dict:
-        return {"status": "ok", "service": "research-api", "ready": app.state.rag is not None}
+        return {"status": "ok", "service": "research-api", "ready": bool(app.state.rags)}
 
     @app.post("/api/query", response_model=QueryResponse)
     def query(request: QueryRequest) -> QueryResponse:
-        if app.state.rag is None:
+        strategy_key = "hybrid" if request.hybrid else "dense"
+        if strategy_key not in app.state.rags:
             try:
-                app.state.rag = build_rag(hybrid=request.hybrid)
+                app.state.rags[strategy_key] = build_rag(hybrid=request.hybrid)
             except Exception as exc:
                 logger.exception("Research API dependency initialization failed")
                 raise HTTPException(status_code=503, detail="Research service is not configured.") from exc
@@ -62,7 +63,7 @@ def create_app(rag=None) -> FastAPI:
             max_year=request.max_year,
         )
         try:
-            answer = app.state.rag.ask(
+            answer = app.state.rags[strategy_key].ask(
                 request.question,
                 top_k=request.top_k,
                 filter_criteria=filters,
