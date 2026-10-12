@@ -30,7 +30,7 @@ public research and private ingestion service boundaries:
   - `gemini_embeddings.py`: `GeminiEmbeddingProvider` batching chunk embedding generation using Gemini `text-embedding-004` (768 dimensions) with asymmetric retrieval task types (`retrieval_document` and `retrieval_query`).
 - **`pipeline/`**:
   - `document_pipeline.py`: Orchestrates loading, section structuring, chunking, embedding, and vector store persistence. Includes `process_directory()` for batch folder ingestion.
-- **`cli.py`**: Command-line interface supporting single PDF and batch folder ingestion (`--input`, `--input-dir`, `--save-db`, `--init-db`).
+- **`cli.py`**: Command-line interface supporting single PDF and batch folder ingestion (`--input`, `--input-dir`, `--save-db`, `--init-db`, `--migrate-db`, and the selectable local/Gemini embedding provider).
 
 ### 2. Storage & Vector DB (`storage/`)
 - **`base.py`**: Abstract `VectorStore` interface, `SearchResult`, and `FilterCriteria` models.

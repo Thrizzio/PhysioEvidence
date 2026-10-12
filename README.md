@@ -85,11 +85,11 @@ Initialize a PostgreSQL 16+ database with pgvector:
 
 ```bash
 python3 -m document_processing.cli --init-db
+python3 -m document_processing.cli --migrate-db
 ```
 
-For a database created before processing metadata was added, run the migration
-SQL in `storage/migrations/001_processing_metadata.sql` using your migration
-workflow before starting ingestion.
+For a database created before processing metadata was added, `--migrate-db`
+applies the checked-in SQL in `storage/migrations/001_processing_metadata.sql`.
 
 ## Run both APIs
 
