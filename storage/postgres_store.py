@@ -37,9 +37,13 @@ class PostgresVectorStore(VectorStore):
         INSERT INTO documents (
             document_id, source_path, filename, title, authors, 
             publication_year, journal, doi, source_url, extra_metadata
+            , source_type, license, access_status, content_hash, file_size_bytes,
+            ingestion_time, extraction_status
         ) VALUES (
             %(doc_id)s, %(source_path)s, %(filename)s, %(title)s, %(authors)s,
-            %(year)s, %(journal)s, %(doi)s, %(source_url)s, %(extra)s::jsonb
+            %(year)s, %(journal)s, %(doi)s, %(source_url)s, %(extra)s::jsonb,
+            %(source_type)s, %(license)s, %(access_status)s, %(content_hash)s,
+            %(file_size_bytes)s, %(ingestion_time)s, %(extraction_status)s
         )
         ON CONFLICT (document_id) DO UPDATE SET
             source_path = EXCLUDED.source_path,
@@ -50,6 +54,13 @@ class PostgresVectorStore(VectorStore):
             journal = EXCLUDED.journal,
             doi = EXCLUDED.doi,
             source_url = EXCLUDED.source_url,
+            source_type = EXCLUDED.source_type,
+            license = EXCLUDED.license,
+            access_status = EXCLUDED.access_status,
+            content_hash = EXCLUDED.content_hash,
+            file_size_bytes = EXCLUDED.file_size_bytes,
+            ingestion_time = EXCLUDED.ingestion_time,
+            extraction_status = EXCLUDED.extraction_status,
             extra_metadata = EXCLUDED.extra_metadata;
         """
 
@@ -63,6 +74,13 @@ class PostgresVectorStore(VectorStore):
             "journal": meta.journal,
             "doi": meta.doi,
             "source_url": meta.source_url,
+            "source_type": meta.source_type,
+            "license": meta.license,
+            "access_status": meta.access_status,
+            "content_hash": meta.content_hash,
+            "file_size_bytes": meta.file_size_bytes,
+            "ingestion_time": meta.ingestion_time,
+            "extraction_status": meta.extraction_status,
             "extra": extra_json
         }
 
@@ -82,9 +100,13 @@ class PostgresVectorStore(VectorStore):
         INSERT INTO chunks (
             chunk_id, document_id, chunk_index, section, page_start, page_end,
             content, extra_metadata, embedding
+            , parent_id, chunking_strategy, chunking_version, character_count,
+            token_count, embedding_model, embedding_dimensions, embedding_normalized
         ) VALUES (
             %(chunk_id)s, %(document_id)s, %(chunk_index)s, %(section)s, 
-            %(page_start)s, %(page_end)s, %(content)s, %(extra_metadata)s::jsonb, %(embedding)s
+            %(page_start)s, %(page_end)s, %(content)s, %(extra_metadata)s::jsonb, %(embedding)s,
+            %(parent_id)s, %(chunking_strategy)s, %(chunking_version)s, %(character_count)s,
+            %(token_count)s, %(embedding_model)s, %(embedding_dimensions)s, %(embedding_normalized)s
         )
         ON CONFLICT (chunk_id) DO UPDATE SET
             document_id = EXCLUDED.document_id,
@@ -93,6 +115,14 @@ class PostgresVectorStore(VectorStore):
             page_start = EXCLUDED.page_start,
             page_end = EXCLUDED.page_end,
             content = EXCLUDED.content,
+            parent_id = EXCLUDED.parent_id,
+            chunking_strategy = EXCLUDED.chunking_strategy,
+            chunking_version = EXCLUDED.chunking_version,
+            character_count = EXCLUDED.character_count,
+            token_count = EXCLUDED.token_count,
+            embedding_model = EXCLUDED.embedding_model,
+            embedding_dimensions = EXCLUDED.embedding_dimensions,
+            embedding_normalized = EXCLUDED.embedding_normalized,
             extra_metadata = EXCLUDED.extra_metadata,
             embedding = EXCLUDED.embedding;
         """
@@ -112,6 +142,14 @@ class PostgresVectorStore(VectorStore):
                 "page_start": c.metadata.page_start if c.metadata else None,
                 "page_end": c.metadata.page_end if c.metadata else None,
                 "content": c.content,
+                "parent_id": c.parent_id,
+                "chunking_strategy": c.chunking_strategy,
+                "chunking_version": c.chunking_version,
+                "character_count": c.character_count or len(c.content),
+                "token_count": c.token_count or len(c.content.split()),
+                "embedding_model": getattr(self, "embedding_model", None),
+                "embedding_dimensions": len(c.embedding) if c.embedding is not None else None,
+                "embedding_normalized": getattr(self, "embedding_normalized", None),
                 "extra_metadata": json.dumps(meta_dict),
                 "embedding": emb
             })
