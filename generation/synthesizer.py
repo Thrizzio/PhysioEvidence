@@ -1,5 +1,6 @@
 import time
 import logging
+import re
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
@@ -19,6 +20,7 @@ class EvidenceAnswer(BaseModel):
     answer: str
     sources: List[CitationSource] = Field(default_factory=list)
     insufficient_evidence: bool = False
+    citation_verified: bool = True
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
     total_tokens: Optional[int] = None
@@ -84,8 +86,24 @@ class EvidenceSynthesizer:
 
         latency = (time.perf_counter() - start_t) * 1000.0
 
-        # Check if the model reported insufficient evidence
+        # A source list alone is not enough: reject answers that cite a source
+        # number which was not supplied to the model, or that omit citations
+        # entirely. This keeps the UI from presenting unverifiable synthesis.
+        cited_numbers = {
+            int(number)
+            for number in re.findall(r"\[Source\s+(\d+)\]", response.content, flags=re.IGNORECASE)
+        }
+        available_numbers = {source.source_number for source in assembled.sources}
+        citations_valid = bool(cited_numbers) and cited_numbers.issubset(available_numbers)
         is_insufficient = "insufficient evidence" in response.content.lower()
+        answer_text = response.content.strip()
+        if not citations_valid and not is_insufficient:
+            logger.warning("LLM response failed citation validation: cited=%s available=%s", cited_numbers, available_numbers)
+            answer_text = (
+                "The generated response could not be verified against the retrieved sources. "
+                "Please review the supporting evidence or broaden the indexed corpus."
+            )
+            is_insufficient = True
 
         logger.info(
             f"Synthesized evidence answer in {latency:.1f}ms: "
@@ -94,9 +112,10 @@ class EvidenceSynthesizer:
 
         return EvidenceAnswer(
             question=question,
-            answer=response.content.strip(),
+            answer=answer_text,
             sources=assembled.sources,
             insufficient_evidence=is_insufficient,
+            citation_verified=citations_valid or is_insufficient,
             prompt_tokens=response.prompt_tokens,
             completion_tokens=response.completion_tokens,
             total_tokens=response.total_tokens,

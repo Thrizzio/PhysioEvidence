@@ -52,3 +52,19 @@ def test_synthesizer_llm_reports_insufficient_evidence():
     ]
     answer = synthesizer.synthesize("What is the exact dosage?", search_results=results)
     assert answer.insufficient_evidence is True
+
+def test_synthesizer_rejects_unverifiable_citation():
+    mock_llm = MockLLMProvider(
+        response_generator=lambda prompt: "The intervention is effective [Source 99]."
+    )
+    synthesizer = EvidenceSynthesizer(llm=mock_llm)
+    answer = synthesizer.synthesize(
+        "Is the intervention effective?",
+        search_results=[SearchResult(
+            chunk_id="c1", document_id="d1", chunk_index=0,
+            content="The study reports an effect.", score=0.5,
+        )],
+    )
+    assert answer.insufficient_evidence is True
+    assert answer.citation_verified is True
+    assert "could not be verified" in answer.answer
