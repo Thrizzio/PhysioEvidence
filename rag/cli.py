@@ -8,7 +8,7 @@ import sys
 from dotenv import load_dotenv
 
 from document_processing.utils.logging import setup_logging
-from document_processing.embeddings.gemini_embeddings import GeminiEmbeddingProvider
+from services.common import build_embedder
 from storage.db import get_connection
 from storage.postgres_store import PostgresVectorStore
 from storage.base import FilterCriteria
@@ -27,17 +27,22 @@ def main():
     parser.add_argument("--rerank", action="store_true", help="Apply cross-encoder/heuristic reranker")
     parser.add_argument("--section", help="Filter evidence by specific paper section (e.g. Results, Methods)")
     parser.add_argument("--min-year", type=int, help="Filter by minimum publication year")
+    parser.add_argument("--embedding-provider", choices=["gemini", "local", "ollama"], default=None, help="Embedding provider; defaults to EMBEDDING_PROVIDER or gemini")
     
     args = parser.parse_args()
 
     load_dotenv()
     setup_logging()
 
+    if args.embedding_provider:
+        import os
+        os.environ["EMBEDDING_PROVIDER"] = args.embedding_provider
+
     # Initialize components
     try:
-        embedder = GeminiEmbeddingProvider()
-    except ValueError as e:
-        print(f"Error: {e}. Set GEMINI_API_KEY in your environment.")
+        embedder = build_embedder()
+    except Exception as e:
+        print(f"Error initializing embedder: {e}")
         sys.exit(1)
 
     try:
