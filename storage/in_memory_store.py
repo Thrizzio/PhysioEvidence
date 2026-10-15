@@ -70,6 +70,13 @@ class InMemoryVectorStore(VectorStore):
                 if filter_criteria.authors_contain.lower() not in authors_str.lower():
                     return False
 
+        if filter_criteria.embedding_model:
+            chunk_model = getattr(chunk, "embedding_model", None)
+            if not chunk_model and chunk.metadata and chunk.metadata.extra:
+                chunk_model = chunk.metadata.extra.get("embedding_model")
+            if chunk_model and chunk_model != filter_criteria.embedding_model:
+                return False
+
         return True
 
     def search_vector(

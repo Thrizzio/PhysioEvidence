@@ -196,6 +196,9 @@ class PostgresVectorStore(VectorStore):
             if filter_criteria.authors_contain:
                 where_clauses.append("array_to_string(d.authors, ' ') ILIKE %(author)s")
                 params["author"] = f"%{filter_criteria.authors_contain}%"
+            if filter_criteria.embedding_model:
+                where_clauses.append("c.embedding_model = %(embedding_model)s")
+                params["embedding_model"] = filter_criteria.embedding_model
 
         where_sql = " AND ".join(where_clauses)
 

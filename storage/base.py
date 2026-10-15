@@ -13,6 +13,7 @@ class FilterCriteria(BaseModel):
     min_year: Optional[int] = None
     max_year: Optional[int] = None
     authors_contain: Optional[str] = None
+    embedding_model: Optional[str] = None
     extra_filter: Optional[Dict[str, Any]] = None
 
 class SearchResult(BaseModel):

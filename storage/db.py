@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
+from services.config import mask_connection_string
+
 def get_connection_string() -> str:
     """
     Constructs the PostgreSQL connection string from environment variables.
@@ -33,12 +35,18 @@ def get_connection(conn_str: Optional[str] = None) -> psycopg.Connection:
     Opens a psycopg connection and registers the pgvector type adapter.
     """
     target_conn_str = conn_str or get_connection_string()
+    masked_target = mask_connection_string(target_conn_str)
     try:
         conn = psycopg.connect(target_conn_str, autocommit=True)
         register_vector(conn)
         return conn
     except Exception as e:
-        logger.error(f"Failed to connect to PostgreSQL at '{target_conn_str}': {e}")
+        logger.error(f"Failed to connect to PostgreSQL at '{masked_target}': {e}")
+        if "neon.tech" in target_conn_str and ("timeout" in str(e).lower() or "timed out" in str(e).lower()):
+            logger.warning(
+                "Connection to Neon timed out. Outbound TCP port 5432 may be blocked by your local network/firewall. "
+                "Ensure outbound port 5432 is open or check network connectivity."
+            )
         raise
 
 def init_db(conn: Optional[psycopg.Connection] = None, schema_path: Optional[Path] = None) -> None:
