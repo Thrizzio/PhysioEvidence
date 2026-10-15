@@ -1,7 +1,16 @@
-const apiBase = document.body.dataset.apiBase || '';
+const rawApiBase = document.body.dataset.apiBase || '';
+const apiBase = (window.location.hostname === '127.0.0.1' && rawApiBase.includes('//localhost:'))
+  ? rawApiBase.replace('//localhost:', '//127.0.0.1:')
+  : (window.location.hostname === 'localhost' && rawApiBase.includes('//127.0.0.1:'))
+  ? rawApiBase.replace('//127.0.0.1:', '//localhost:')
+  : rawApiBase;
 const token = document.querySelector('#token'); const files = document.querySelector('#files'); const status = document.querySelector('#status');
 const documents = document.querySelector('#documents'); const usage = document.querySelector('#usage');
-const headers = () => ({ Authorization: `Bearer ${token.value}` });
+const headers = () => {
+  const raw = (token.value || '').trim();
+  const cleanToken = raw.replace(/^Bearer\s+/i, '');
+  return cleanToken ? { Authorization: `Bearer ${cleanToken}` } : {};
+};
 function report(message, error = false) { status.textContent = message; status.className = error ? 'error' : ''; }
 async function refresh() {
   try {

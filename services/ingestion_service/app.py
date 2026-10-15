@@ -12,6 +12,7 @@ from document_processing.pipeline.document_pipeline import DocumentPipeline
 from document_processing.processors.chunker import SectionAwareChunker
 from document_processing.processors.section_detector import SectionDetector
 from services.common import build_embedder, configured_origins
+from services.config import get_app_config
 from services.ingestion_service.models import IngestionJob
 from services.ingestion_service.service import IngestionManager
 from services.ingestion_service.storage import LocalOriginalStore
@@ -21,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 def build_manager() -> IngestionManager:
-    store = PostgresVectorStore()
+    config = get_app_config()
+    store = PostgresVectorStore(connection_string=config.database.get_connection_string())
     pipeline = DocumentPipeline(
         loader=PDFLoader(),
         section_detector=SectionDetector(),
@@ -29,14 +31,14 @@ def build_manager() -> IngestionManager:
         embedder=build_embedder(),
         vector_store=store,
     )
-    quota = os.getenv("INGESTION_QUOTA_BYTES")
+    quota = config.ingestion.quota_bytes
     return IngestionManager(
         pipeline=pipeline,
         original_store=LocalOriginalStore(
-            os.getenv("INGESTION_STORAGE_ROOT", "./data/originals"),
-            quota_bytes=int(quota) if quota else None,
+            config.ingestion.storage_root,
+            quota_bytes=quota,
         ),
-        max_file_size=int(os.getenv("INGESTION_MAX_FILE_SIZE_BYTES", str(50 * 1024 * 1024))),
+        max_file_size=config.ingestion.max_file_size_bytes,
     )
 
 
@@ -47,17 +49,24 @@ def create_app(manager: IngestionManager | None = None) -> FastAPI:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
-            allow_methods=["GET", "POST"],
-            allow_headers=["Authorization", "Content-Type"],
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+            allow_credentials=True,
         )
     app.state.manager = manager
 
     def require_admin(authorization: str | None = Header(default=None)) -> None:
-        expected = os.getenv("INGESTION_ADMIN_TOKEN")
+        expected = (os.getenv("INGESTION_ADMIN_TOKEN") or "").strip()
         if not expected:
             raise HTTPException(status_code=503, detail="INGESTION_ADMIN_TOKEN is not configured.")
-        supplied = authorization.removeprefix("Bearer ") if authorization else ""
-        if not hmac.compare_digest(supplied, expected):
+        supplied = ""
+        if authorization:
+            cleaned = authorization.strip()
+            if cleaned.lower().startswith("bearer "):
+                supplied = cleaned[7:].strip()
+            else:
+                supplied = cleaned
+        if not supplied or not hmac.compare_digest(supplied, expected):
             raise HTTPException(status_code=401, detail="Admin authorization required.")
 
     @app.get("/health")

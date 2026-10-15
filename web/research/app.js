@@ -5,7 +5,12 @@ const answer = document.querySelector('#answer');
 const answerText = document.querySelector('#answer-text');
 const evidenceNote = document.querySelector('#evidence-note');
 const sources = document.querySelector('#sources');
-const apiBase = document.body.dataset.apiBase || '';
+const rawApiBase = document.body.dataset.apiBase || '';
+const apiBase = (window.location.hostname === '127.0.0.1' && rawApiBase.includes('//localhost:'))
+  ? rawApiBase.replace('//localhost:', '//127.0.0.1:')
+  : (window.location.hostname === 'localhost' && rawApiBase.includes('//127.0.0.1:'))
+  ? rawApiBase.replace('//127.0.0.1:', '//localhost:')
+  : rawApiBase;
 
 document.querySelectorAll('[data-example]').forEach((button) => {
   button.addEventListener('click', () => { question.value = button.dataset.example; question.focus(); });

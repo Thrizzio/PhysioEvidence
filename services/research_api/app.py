@@ -35,8 +35,9 @@ def create_app(rag=None) -> FastAPI:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
-            allow_methods=["GET", "POST"],
-            allow_headers=["Content-Type"],
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Content-Type", "Accept", "Origin", "X-Requested-With"],
+            allow_credentials=True,
         )
     app.state.rags = {"hybrid": rag} if rag is not None else {}
 
