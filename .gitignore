@@ -72,6 +72,7 @@ generated/
 # Processed documents and embeddings
 data/processed/
 data/embeddings/
+data/originals/
 
 # ==========================================
 # Logs

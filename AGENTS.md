@@ -7,7 +7,7 @@ PhysioEvidence is an evidence-grounded research assistant designed to help physi
 - Python 3.14
 - Models: Pydantic v2
 - PDF Extraction: PyMuPDF (fitz)
-- Embeddings: Google Gemini (`text-embedding-004`, 768 dimensions)
+- Embeddings: Local Ollama (`embeddinggemma-2:270m`, 768 dimensions) or Google Gemini (`text-embedding-004`, 768 dimensions)
 - Storage & Vector DB: PostgreSQL 16+ with `pgvector`
 - Database driver: `psycopg` (v3) binary
 - Generation: Google Gemini (`gemini-1.5-flash`)

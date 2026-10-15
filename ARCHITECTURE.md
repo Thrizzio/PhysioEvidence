@@ -27,7 +27,9 @@ public research and private ingestion service boundaries:
   - `chunker.py`: `SectionAwareChunker` chunks hierarchically by section, paragraph, and sentence rather than fixed arbitrary character cuts.
 - **`embeddings/`**:
   - `base.py`: `EmbeddingProvider` abstract interface (`embed_chunks`, `embed_query`).
+  - `ollama_embeddings.py`: `OllamaEmbeddingProvider` communicating with Ollama's `POST /api/embed` endpoint for local `embeddinggemma-2:270m` (768 dimensions) with asymmetric task formatting (`task: search result | query: ...` vs `title: ... | text: ...`).
   - `gemini_embeddings.py`: `GeminiEmbeddingProvider` batching chunk embedding generation using Gemini `text-embedding-004` (768 dimensions) with asymmetric retrieval task types (`retrieval_document` and `retrieval_query`).
+  - `local_embeddings.py`: `LocalEmbeddingProvider` using optional sentence-transformers for offline model execution.
 - **`pipeline/`**:
   - `document_pipeline.py`: Orchestrates loading, section structuring, chunking, embedding, and vector store persistence. Includes `process_directory()` for batch folder ingestion.
 - **`cli.py`**: Command-line interface supporting single PDF and batch folder ingestion (`--input`, `--input-dir`, `--save-db`, `--init-db`, `--migrate-db`, and the selectable local/Gemini embedding provider).
@@ -64,6 +66,7 @@ public research and private ingestion service boundaries:
 - Non-invasive tracing hooks in `tracing.py` that integrate with LangSmith when `LANGSMITH_TRACING=true` and credentials are provided, running with zero overhead when disabled.
 
 ### 8. Service boundaries (`services/`)
+- **`config.py`**: Centralized Pydantic configuration loader and startup validator. Enforces fail-fast validation without silent fallbacks, strictly validates 768-dimension vector alignment, redacts connection credentials in logs, and separates local development settings from cloud deployment settings.
 - **`research_api/`**: Public query endpoint (`POST /api/query`) and health
   endpoint. It never accepts document uploads.
 - **`ingestion_service/`**: Private upload, job status, document list, and
