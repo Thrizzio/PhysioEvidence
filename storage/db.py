@@ -42,10 +42,11 @@ def get_connection(conn_str: Optional[str] = None) -> psycopg.Connection:
         return conn
     except Exception as e:
         logger.error(f"Failed to connect to PostgreSQL at '{masked_target}': {e}")
-        if "neon.tech" in target_conn_str and ("timeout" in str(e).lower() or "timed out" in str(e).lower()):
+        if ("neon.tech" in target_conn_str or "supabase" in target_conn_str) and ("timeout" in str(e).lower() or "timed out" in str(e).lower()):
             logger.warning(
-                "Connection to Neon timed out. Outbound TCP port 5432 may be blocked by your local network/firewall. "
-                "Ensure outbound port 5432 is open or check network connectivity."
+                "Connection to PostgreSQL timed out. Outbound TCP port (5432 or 6543) may be blocked by your local "
+                "network/ISP/firewall, or IPv6 may be unreachable. Ensure outbound ports 5432 and 6543 are permitted, "
+                "or connect via a VPN/Cloudflare WARP/mobile hotspot."
             )
         raise
 

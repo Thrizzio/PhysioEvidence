@@ -187,5 +187,20 @@ class InMemoryVectorStore(VectorStore):
     def count_documents(self) -> int:
         return len(self.documents)
 
+    def has_document(self, document_id: str) -> bool:
+        """
+        Checks if a document exists by document_id or content_hash.
+        """
+        if document_id in self.documents:
+            return True
+        for doc in self.documents.values():
+            if getattr(doc, "document_id", None) == document_id:
+                return True
+            if hasattr(doc, "metadata") and doc.metadata:
+                if getattr(doc.metadata, "content_hash", None) == document_id:
+                    return True
+        return False
+
     def count_chunks(self) -> int:
         return len(self.chunks)
+

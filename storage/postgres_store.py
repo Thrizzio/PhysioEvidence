@@ -428,6 +428,18 @@ class PostgresVectorStore(VectorStore):
                 cur.execute(sql)
                 return cur.fetchone()[0]
 
+    def has_document(self, document_id: str) -> bool:
+        """
+        Checks if a document exists by document_id or content_hash.
+        Raises database exceptions on connection/query failure.
+        """
+        sql = "SELECT 1 FROM documents WHERE document_id = %(doc_id)s OR content_hash = %(doc_id)s LIMIT 1;"
+        with self._get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, {"doc_id": document_id})
+                return cur.fetchone() is not None
+
+
     def count_chunks(self) -> int:
         sql = "SELECT COUNT(*) FROM chunks;"
         with self._get_conn() as conn:

@@ -1,9 +1,11 @@
 from unittest.mock import MagicMock
 import pytest
+import psycopg
 from storage.postgres_store import PostgresVectorStore
 from storage.base import FilterCriteria
 from document_processing.models.document import StructuredDocument, DocumentMetadata
 from document_processing.models.chunk import Chunk, ChunkMetadata
+
 
 @pytest.fixture
 def mock_store():
@@ -130,3 +132,29 @@ def test_search_text_sql_building(mock_store):
     assert "c.tsv @@ plainto_tsquery('english', %(query_text)s)" in sql_call
     assert "c.section = ANY(%(sections)s)" in sql_call
     assert "ORDER BY score DESC" in sql_call
+
+
+def test_has_document_sql(mock_store):
+    mock_conn, mock_cur = _setup_mock_connection(mock_store)
+    mock_cur.fetchone.return_value = (1,)
+
+    exists = mock_store.has_document("sample_doc_or_hash")
+    assert exists is True
+    assert mock_cur.execute.called
+    sql_call = mock_cur.execute.call_args[0][0]
+    params_call = mock_cur.execute.call_args[0][1]
+    assert "SELECT 1 FROM documents" in sql_call
+    assert "document_id = %(doc_id)s OR content_hash = %(doc_id)s" in sql_call
+    assert params_call["doc_id"] == "sample_doc_or_hash"
+
+    mock_cur.fetchone.return_value = None
+    assert mock_store.has_document("missing_doc") is False
+
+
+def test_has_document_propagates_db_error(mock_store):
+    mock_conn, mock_cur = _setup_mock_connection(mock_store)
+    mock_cur.execute.side_effect = psycopg.OperationalError("Connection lost")
+
+    with pytest.raises(psycopg.OperationalError, match="Connection lost"):
+        mock_store.has_document("any_doc")
+

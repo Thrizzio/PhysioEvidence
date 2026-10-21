@@ -187,3 +187,26 @@ def test_delete_document_cascades():
     assert store.count_documents() == 0
     assert store.count_chunks() == 0
     assert store.get_chunk("chunk_del_1") is None
+
+
+def test_has_document():
+    store = InMemoryVectorStore()
+    assert store.has_document("nonexistent") is False
+
+    doc = StructuredDocument(
+        document_id="doc_xyz",
+        source_path="/path/test.pdf",
+        filename="test.pdf",
+        metadata=DocumentMetadata(title="Test", content_hash="hash_123456"),
+        sections=[]
+    )
+    store.save_document(doc)
+
+    assert store.has_document("doc_xyz") is True
+    assert store.has_document("hash_123456") is True
+    assert store.has_document("other_hash") is False
+
+    store.delete_document("doc_xyz")
+    assert store.has_document("doc_xyz") is False
+    assert store.has_document("hash_123456") is False
+

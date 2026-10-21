@@ -88,6 +88,11 @@ class VectorStore(ABC):
         pass
 
     @abstractmethod
+    def has_document(self, document_id: str) -> bool:
+        """Returns True if the document exists in the store (by document_id or content_hash)."""
+        pass
+
+    @abstractmethod
     def count_documents(self) -> int:
         """Returns the total number of stored documents."""
         pass
@@ -96,3 +101,4 @@ class VectorStore(ABC):
     def count_chunks(self) -> int:
         """Returns the total number of stored chunks."""
         pass
+

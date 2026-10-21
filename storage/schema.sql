@@ -1,7 +1,7 @@
 -- PhysioEvidence PostgreSQL Schema with pgvector
 -- Enables vector similarity search, relational academic metadata, and full-text search
 
-CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
 
 -- Documents table: Stores metadata about research papers
 CREATE TABLE IF NOT EXISTS documents (
