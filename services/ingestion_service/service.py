@@ -59,32 +59,39 @@ class IngestionManager:
 
         existing_id = self.hash_to_job.get(content_hash)
         if existing_id:
-            existing = self.jobs[existing_id]
-            duplicate = existing.model_copy(update={
-                "job_id": str(uuid.uuid4()),
-                "state": JobState.duplicate,
-                "progress": 100,
-                "completed_at": datetime.now(timezone.utc),
-            })
-            self.jobs[duplicate.job_id] = duplicate
-            return duplicate
+            existing = self.jobs.get(existing_id)
+            if existing:
+                if existing.state == JobState.processing:
+                    return existing
+                elif existing.state == JobState.succeeded:
+                    duplicate = existing.model_copy(update={
+                        "job_id": str(uuid.uuid4()),
+                        "state": JobState.duplicate,
+                        "progress": 100,
+                        "completed_at": datetime.now(timezone.utc),
+                    })
+                    self.jobs[duplicate.job_id] = duplicate
+                    return duplicate
+                # If existing job failed or was duplicate, allow retry
 
-        # A service restart should not cause a stored original to be embedded
-        # again. The content hash is the durable idempotency key even when the
-        # in-memory job registry has been rebuilt.
-        if self.original_store.path_for(content_hash).exists():
-            duplicate = IngestionJob(
-                job_id=str(uuid.uuid4()),
-                filename=filename,
-                content_hash=content_hash,
-                document_id=content_hash,
-                state=JobState.duplicate,
-                progress=100,
-                file_size_bytes=len(content),
-                completed_at=datetime.now(timezone.utc),
-            )
-            self.jobs[duplicate.job_id] = duplicate
-            return duplicate
+        # Check persistent storage to ensure durable idempotency across service restarts.
+        # If the database check fails (e.g. database error), let the exception propagate
+        # so the ingestion attempt fails clearly instead of assuming "not found".
+        if self.pipeline and self.pipeline.vector_store:
+            if self.pipeline.vector_store.has_document(content_hash):
+                duplicate = IngestionJob(
+                    job_id=str(uuid.uuid4()),
+                    filename=filename,
+                    content_hash=content_hash,
+                    document_id=extracted.document_id,
+                    state=JobState.duplicate,
+                    progress=100,
+                    file_size_bytes=len(content),
+                    completed_at=datetime.now(timezone.utc),
+                )
+                self.jobs[duplicate.job_id] = duplicate
+                self.hash_to_job[content_hash] = duplicate.job_id
+                return duplicate
 
         path = self.original_store.save(content, content_hash)
 
@@ -108,11 +115,12 @@ class IngestionManager:
             if self.pipeline is None or self.pipeline.vector_store is None:
                 raise RuntimeError("Ingestion storage is not configured.")
             chunks = self.pipeline.process(path, generate_embeddings=self.pipeline.embedder is not None)
-            if self.pipeline.vector_store.count_documents() < 1 or self.pipeline.vector_store.count_chunks() < len(chunks):
+            if not self.pipeline.vector_store.has_document(job.content_hash) or self.pipeline.vector_store.count_chunks() < len(chunks):
                 raise RuntimeError("Processing returned before storage verification succeeded.")
             job.state = JobState.succeeded
             job.progress = 100
             job.chunk_count = len(chunks)
+
             job.completed_at = datetime.now(timezone.utc)
         except Exception as exc:
             job.state = JobState.failed
