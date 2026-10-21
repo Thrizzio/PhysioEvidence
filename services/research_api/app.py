@@ -53,7 +53,7 @@ def create_app(rag=None) -> FastAPI:
                 app.state.rags[strategy_key] = build_rag(hybrid=request.hybrid)
             except Exception as exc:
                 logger.exception("Research API dependency initialization failed")
-                raise HTTPException(status_code=503, detail="Research service is not configured.") from exc
+                raise HTTPException(status_code=503, detail=f"Research service is not configured: {exc}") from exc
 
         if request.min_year is not None and request.max_year is not None and request.min_year > request.max_year:
             raise HTTPException(status_code=422, detail="min_year cannot be greater than max_year.")
@@ -71,7 +71,8 @@ def create_app(rag=None) -> FastAPI:
             )
         except Exception as exc:
             logger.exception("Research query failed")
-            raise HTTPException(status_code=502, detail="The research query could not be completed.") from exc
+            raise HTTPException(status_code=502, detail=f"The research query could not be completed: {exc}") from exc
+
         return QueryResponse(
             answer=answer,
             retrieval_strategy="hybrid-rrf" if request.hybrid else "dense-vector",

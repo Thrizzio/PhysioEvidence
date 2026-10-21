@@ -62,7 +62,8 @@ def build_embedder() -> EmbeddingProvider:
 
 def build_rag(*, hybrid: bool = True) -> PhysioEvidenceRAG:
     """Build the production dependency graph lazily at service startup."""
-    config = get_app_config()
+    config = get_app_config(reload=True)
+    config.llm.validate_for_generation()
     store = PostgresVectorStore(connection_string=config.database.get_connection_string())
     embedder = build_embedder()
     retriever = (
@@ -74,6 +75,7 @@ def build_rag(*, hybrid: bool = True) -> PhysioEvidenceRAG:
         GeminiLLMProvider(model_name=config.llm.gemini_model, temperature=config.llm.temperature)
     )
     return PhysioEvidenceRAG(retriever=retriever, synthesizer=synthesizer)
+
 
 
 def expand_local_origins(origins: list[str]) -> list[str]:
