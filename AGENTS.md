@@ -10,7 +10,8 @@ PhysioEvidence is an evidence-grounded research assistant designed to help physi
 - Embeddings: Local Ollama (`embeddinggemma-2:270m`, 768 dimensions) or Google Gemini (`text-embedding-004`, 768 dimensions)
 - Storage & Vector DB: PostgreSQL 16+ with `pgvector`
 - Database driver: `psycopg` (v3) binary
-- Generation: Google Gemini (`gemini-1.5-flash`)
+- Generation: Google Gemini (`gemini-3.5-flash-lite`)
+
 - Testing: `pytest`
 - Observability: LangSmith (optional tracing via environment variables)
 

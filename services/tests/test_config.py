@@ -116,6 +116,15 @@ def test_llm_config_requires_api_key_for_generation():
     valid_cfg.validate_for_generation()
 
 
+def test_llm_config_model_configuration():
+    default_cfg = LLMConfig(gemini_api_key="valid-key")
+    assert default_cfg.gemini_model == "gemini-3.5-flash-lite"
+
+    custom_cfg = LLMConfig(gemini_api_key="valid-key", gemini_model="gemini-3.1-pro-preview")
+    assert custom_cfg.gemini_model == "gemini-3.1-pro-preview"
+
+
+
 def test_ingestion_config_file_size_validation():
     with pytest.raises(ConfigurationError, match="INGESTION_MAX_FILE_SIZE_BYTES must be positive"):
         IngestionConfig(max_file_size_bytes=0)

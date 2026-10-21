@@ -149,8 +149,9 @@ class EmbeddingConfig(_ConfigBase):
 class LLMConfig(_ConfigBase):
     """Large language model generation and synthesis configuration."""
     gemini_api_key: Optional[str] = None
-    gemini_model: str = Field(default="gemini-1.5-flash")
+    gemini_model: str = Field(default="gemini-3.5-flash-lite")
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+
 
     def validate_for_generation(self) -> None:
         """Ensure Gemini API key is configured before attempting generation."""
@@ -265,8 +266,9 @@ class AppConfig(_ConfigBase):
         # LLM
         llm = LLMConfig(
             gemini_api_key=os.getenv("GEMINI_API_KEY") or None,
-            gemini_model=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+            gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
         )
+
 
         # Ingestion
         max_size_raw = os.getenv("INGESTION_MAX_FILE_SIZE_BYTES", str(50 * 1024 * 1024))
