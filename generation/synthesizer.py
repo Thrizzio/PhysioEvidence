@@ -89,10 +89,10 @@ class EvidenceSynthesizer:
         # A source list alone is not enough: reject answers that cite a source
         # number which was not supplied to the model, or that omit citations
         # entirely. This keeps the UI from presenting unverifiable synthesis.
-        cited_numbers = {
-            int(number)
-            for number in re.findall(r"\[Source\s+(\d+)\]", response.content, flags=re.IGNORECASE)
-        }
+        cited_numbers: set[int] = set()
+        for block in re.findall(r"\[\s*Sources?\s*([^\]]+)\]", response.content, flags=re.IGNORECASE):
+            for num in re.findall(r"\b\d+\b", block):
+                cited_numbers.add(int(num))
         available_numbers = {source.source_number for source in assembled.sources}
         citations_valid = bool(cited_numbers) and cited_numbers.issubset(available_numbers)
         is_insufficient = "insufficient evidence" in response.content.lower()

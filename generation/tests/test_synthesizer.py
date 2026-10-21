@@ -68,3 +68,19 @@ def test_synthesizer_rejects_unverifiable_citation():
     assert answer.insufficient_evidence is True
     assert answer.citation_verified is True
     assert "could not be verified" in answer.answer
+
+
+def test_synthesizer_multi_source_citations():
+    mock_llm = MockLLMProvider(
+        response_generator=lambda prompt: "Satisfaction was 8.5/10 [Source 1, Source 2] with significant pain reduction [Sources 1, 2]."
+    )
+    synthesizer = EvidenceSynthesizer(llm=mock_llm)
+    results = [
+        SearchResult(chunk_id="c1", document_id="d1", chunk_index=0, content="Score was 8.5.", score=0.9),
+        SearchResult(chunk_id="c2", document_id="d1", chunk_index=1, content="Pain reduced by 50%.", score=0.85),
+    ]
+    answer = synthesizer.synthesize("What were the satisfaction and outcomes?", search_results=results)
+    assert answer.insufficient_evidence is False
+    assert answer.citation_verified is True
+    assert len(answer.sources) == 2
+
